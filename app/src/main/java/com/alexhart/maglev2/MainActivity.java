@@ -16,6 +16,10 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+/**
+ * MainActivity that will swap out fragments through pagerAdapter
+ */
+
 public class MainActivity extends ActionBarActivity {
 
     ViewPager.OnPageChangeListener mOnPageChangeListener = new ViewPager.OnPageChangeListener() {

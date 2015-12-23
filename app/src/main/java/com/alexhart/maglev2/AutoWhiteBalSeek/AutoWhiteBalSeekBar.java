@@ -1,4 +1,4 @@
-package com.alexhart.maglev2;
+package com.alexhart.maglev2.AutoWhiteBalSeek;
 
 import android.content.Context;
 import android.util.AttributeSet;

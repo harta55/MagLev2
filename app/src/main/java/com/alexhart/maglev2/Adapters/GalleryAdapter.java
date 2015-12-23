@@ -1,4 +1,4 @@
-package com.alexhart.maglev2;
+package com.alexhart.maglev2.Adapters;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.View;

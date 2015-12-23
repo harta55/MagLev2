@@ -292,7 +292,7 @@
                     android:src="@drawable/ic_camera_wb_warm_fluorescent"/>
             </LinearLayout>
 
-        <com.alexhart.maglev2.AutoWhiteBalSeekBar
+        <com.alexhart.maglev2.AutoWhiteBalSeek.AutoWhiteBalSeekBar
             android:id="@+id/autowhitebal_seekbar"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"

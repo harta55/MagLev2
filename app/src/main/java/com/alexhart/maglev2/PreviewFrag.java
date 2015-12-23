@@ -51,6 +51,9 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alexhart.maglev2.AutoWhiteBalSeek.AutoWhiteBalSeekBar;
+import com.alexhart.maglev2.AutoWhiteBalSeek.AutoWhiteBalSeekListener;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

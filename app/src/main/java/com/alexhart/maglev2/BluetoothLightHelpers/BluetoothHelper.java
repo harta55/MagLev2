@@ -1,4 +1,4 @@
-package com.alexhart.maglev2.BluetoothLight;
+package com.alexhart.maglev2.BluetoothLightHelpers;
 
 import android.bluetooth.BluetoothDevice;
 

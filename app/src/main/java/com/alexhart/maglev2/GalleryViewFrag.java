@@ -22,20 +22,18 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import com.alexhart.maglev2.Adapters.GalleryAdapter;
+import com.alexhart.maglev2.Adapters.RecyclerViewAdapterPositionInter;
+
 import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Date;
 
 
 /**
@@ -79,7 +77,7 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         mImageWidth = displayMetrics.widthPixels / mViewColumn;
-        //16:9 ratio HARDCORED!!
+        //16:9 ratio HARDCODED!!
         mImageHeight = mImageWidth * 16 / 9;
 
         mRecyclerView = (RecyclerView)v.findViewById(R.id.galleryRecycler);

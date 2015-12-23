@@ -33,7 +33,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.alexhart.maglev2.BluetoothLight.BluetoothHelper;
+import com.alexhart.maglev2.BluetoothLightHelpers.BluetoothHelper;
 
 import java.util.List;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package com.alexhart.maglev2.BluetoothLight;
+package com.alexhart.maglev2.BluetoothLightHelpers;
 
 public class HexAsciiHelper {
     public static int PRINTABLE_ASCII_MIN = 0x20; // ' '

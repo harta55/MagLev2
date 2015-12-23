@@ -1,4 +1,4 @@
-package com.alexhart.maglev2;
+package com.alexhart.maglev2.AutoWhiteBalSeek;
 
 import android.content.Context;
 import android.hardware.camera2.CameraAccessException;
@@ -10,6 +10,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
+
+import com.alexhart.maglev2.AutoWhiteBalSeek.AutoWhiteBalSeekBar;
+import com.alexhart.maglev2.R;
 
 /**
  *
