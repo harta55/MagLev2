@@ -8,24 +8,49 @@
         android:title="@string/pref_camera_title">
 
         <ListPreference
-            android:key="picture_quality"
-            android:summary="Select Image Quality1"
-            android:title="@string/pref_picture_quality_title"/>
+            android:key="@string/pref_picture_quality_key"
+            android:summary="@string/pref_picture_quality_summary"
+            android:title="@string/pref_picture_quality_title"
+            android:defaultValue="0"/>
 
         <ListPreference
-            android:key="video_quality"
-            android:summary="Select Video Quality1"
-            android:title="@string/pref_picture_quality_title"/>
+            android:key="@string/pref_video_quality_key"
+            android:summary="@string/pref_video_quality_summary"
+            android:title="@string/pref_video_quality_title"
+            android:defaultValue="0"/>
 
         <ListPreference
-            android:key="video_format"
+            android:key="@string/pref_video_format_key"
             android:summary="@string/pref_video_format_summary"
-            android:title="@string/pref_video_format_title"/>
+            android:title="@string/pref_video_format_title"
+            android:defaultValue="0"
+            android:entryValues="@array/vidFormatVals"
+            android:entries="@array/vidFormats"
+            />
+
+        <ListPreference
+            android:key="@string/pref_video_encoding_key"
+            android:summary="@string/pref_video_encoding_summary"
+            android:title="@string/pref_video_encode_title"
+            android:defaultValue="0"
+            android:entryValues="@array/vidEncodingsVals"
+            android:entries="@array/vidEncodings"
+            />
+
+        <ListPreference
+            android:key="video_media_encoding"
+            android:summary="@string/pref_audio_encoding_summary"
+            android:title="@string/pref_audio_encoding_title"
+            android:defaultValue="0"
+            android:entryValues="@array/audioEncodingsVals"
+            android:entries="@array/audioEncodings"
+            />
 
         <CheckBoxPreference
-            android:key="camera_startup"
+            android:key="@string/pref_camera_startup_key"
             android:summary="@string/pref_camera_startup_summary"
-            android:title="@string/pref_camera_startup_title"/>
+            android:title="@string/pref_camera_startup_title"
+            android:defaultValue="true"/>
 
     </PreferenceCategory>
 

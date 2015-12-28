@@ -34,13 +34,17 @@
     <!-- Preferences -->
     <string name="pref_camera_title">Camera Preferences</string>
     <string name="pref_picture_quality_title">Picture Quality</string>
-    <string name="pref_picture_quality_summary">Change the quality of the image</string>
+    <string name="pref_picture_quality_summary">Change the resolution of pictures taken</string>
     <string name="pref_video_quality_title">Video Quality</string>
-    <string name="pref_video_quality_summary">Change the quality of video recording</string>
+    <string name="pref_video_quality_summary">Change the resolution of videos recorded</string>
     <string name="pref_video_format_title">Video Format</string>
     <string name="pref_video_format_summary">Change the format of video recording</string>
     <string name="pref_camera_startup_title">Camera On Startup</string>
     <string name="pref_camera_startup_summary">Whether camera opens on app startup</string>
+    <string name="pref_picture_quality_key">picture_quality</string>
+    <string name="pref_video_quality_key">video_quality</string>
+    <string name="pref_video_format_key">video_format</string>
+    <string name="pref_camera_startup_key">camera_startup</string>
 
     <!-- Camera Preview -->
     <string name="camera_compatability_error">Sorry your camera does not support this setting</string>
@@ -54,8 +58,11 @@
     <string name="seek_bar_shade">Shade</string>
     <string name="seek_bar_twilight">Twilight</string>
     <string name="seek_bar_warm_fluorescent">Warm Fluorescent</string>
-
-
+    <string name="pref_video_encode_title">Video Encoding</string>
+    <string name="pref_video_encoding_key">video_encoding</string>
+    <string name="pref_video_encoding_summary">Change the video encoding method</string>
+    <string name="pref_audio_encoding_summary">Change the audio encoder</string>
+    <string name="pref_audio_encoding_title">Audio Encoding</string>
 
 
 </resources>
