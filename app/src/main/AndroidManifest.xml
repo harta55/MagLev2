@@ -36,6 +36,7 @@
 
         <service android:name=".BluetoothLeService" />
         <activity android:name=".PreferencesFragment"
+                  android:screenOrientation="portrait"
                   android:label="PreferencesFragment"/>
 
 

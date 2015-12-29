@@ -38,7 +38,7 @@
             />
 
         <ListPreference
-            android:key="video_media_encoding"
+            android:key="@string/pref_audio_encoding_key"
             android:summary="@string/pref_audio_encoding_summary"
             android:title="@string/pref_audio_encoding_title"
             android:defaultValue="0"

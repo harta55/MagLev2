@@ -74,17 +74,10 @@ public class PreferencesFragment extends Activity {
 
         private void initUI() {
 
-            SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-
-            String msg = sharedPrefs.getString(getString(R.string.pref_picture_quality_key), "noval");
-            makeToast(msg);
-
-
-
-            mPictureQuality = (ListPreference) findPreference("picture_quality");
-            mVideoQuality = (ListPreference) findPreference("video_quality");
-            mVideoFormat = (ListPreference) findPreference("video_format");
-            mCameraStartup = (CheckBoxPreference) findPreference("camera_startup");
+            mPictureQuality = (ListPreference) findPreference(getString(R.string.pref_picture_quality_key));
+            mVideoQuality = (ListPreference) findPreference(getString(R.string.pref_video_quality_key));
+            mVideoFormat = (ListPreference) findPreference(getString(R.string.pref_video_format_key));
+            mCameraStartup = (CheckBoxPreference) findPreference(getString(R.string.pref_camera_startup_key));
 
             mPictureQuality.setOnPreferenceChangeListener(this);
             mVideoQuality.setOnPreferenceChangeListener(this);
@@ -116,7 +109,8 @@ public class PreferencesFragment extends Activity {
                     i++;
                 }
                 mPictureQuality.setEntries(picSizeArray);
-                mPictureQuality.setEntryValues(picSizeEntryVals);
+//                mPictureQuality.setEntryValues(picSizeEntryVals);
+                mPictureQuality.setEntryValues(picSizeArray);
 
                 i = 0;
                 for (Size vidSize : vidSizes){
@@ -126,14 +120,17 @@ public class PreferencesFragment extends Activity {
                     } else if (vidSize.getHeight() * vidSize.getWidth() == 8294400){
                         String entry = vidSize.toString() + " (4k resolution)";
                         vidSizeList.add(entry);
-                        vidSizeEntryList.add(Integer.toString(i));
+//                        vidSizeEntryList.add(Integer.toString(i));
+                        vidSizeEntryList.add(vidSize.toString());
                     } else if (vidSize.getHeight() * vidSize.getWidth() == 2073600){
                         String entry = vidSize.toString() + " (1080p!)";
                         vidSizeList.add(entry);
-                        vidSizeEntryList.add(Integer.toString(i));
+//                        vidSizeEntryList.add(Integer.toString(i));
+                        vidSizeEntryList.add(vidSize.toString());
                     } else {
                         vidSizeList.add(vidSize.toString());
-                        vidSizeEntryList.add(Integer.toString(i));
+//                        vidSizeEntryList.add(Integer.toString(i));
+                        vidSizeEntryList.add(vidSize.toString());
                     }
 
                     i++;

@@ -3,6 +3,7 @@ package com.alexhart.maglev2;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Rect;
@@ -28,6 +29,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -74,6 +76,7 @@ import java.util.List;
 public class PreviewFrag extends Fragment implements View.OnClickListener{
 
     //
+    private SharedPreferences mSharedPreferences;
     private boolean mRecording = false;
     private ImageView mVideoButton;
     private Switch mSwitchAutoFoc;
@@ -116,6 +119,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private Size mLargestImageSize;
     public static final int MEDIA_TYPE_IMAGE = 10;
     public static final int MEDIA_TYPE_VIDEO = 20;
+    public static String MEDIA_EXTENSION = "";
     final private static int STATE_OFF = 0;
     final private static int STATE_CAMERA = 1;
     final private static int STATE_VIDEO = 2;
@@ -233,6 +237,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         Log.d(TAG, "onCreateView");
 
         setHasOptionsMenu(true);
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+
 
         initUIListeners(v);
 
@@ -567,7 +573,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                         mLayoutAutoFoc.getChildAt(1).setEnabled(false);
                     } else {
                         mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_OFF);
-                        makeToast("control mode off!");
                         mLayoutAutoFoc.getChildAt(1).setEnabled(true);
                     }
                     break;
@@ -1245,9 +1250,53 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-        mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
 
-        //todo fix setup so temp file isn't created
+        //uses H262, AAC, 1920x1080
+//        mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
+
+        //todo fix setup so temp file isn't created (could do all onClick, not efficient)
+
+
+        switch (mSharedPreferences.getString(getString(R.string.pref_video_format_key), "0")) {
+
+            case "0":
+                mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+                MEDIA_EXTENSION = ".mp4";
+                break;
+            case "1":
+                mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
+                MEDIA_EXTENSION = ".aac";
+                break;
+            case "2":
+                mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
+                MEDIA_EXTENSION = ".amr";
+                break;
+            case "3":
+                mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_WB);
+                MEDIA_EXTENSION = ".amr";
+                break;
+            case "4":
+                //default
+                mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+                MEDIA_EXTENSION = ".mp4";
+                break;
+            case "5":
+                mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.RAW_AMR);
+                MEDIA_EXTENSION = ".amr";
+                break;
+            case "6":
+                mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+                MEDIA_EXTENSION = ".3gp";
+                break;
+            case "7":
+                mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.WEBM);
+                MEDIA_EXTENSION = ".webm";
+                break;
+            default:
+                mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+                MEDIA_EXTENSION = ".mp4";
+                break;
+        }
         try {
             mVideoFile = getOutputMediaFile(MEDIA_TYPE_VIDEO);
         } catch (NullPointerException e) {
@@ -1256,6 +1305,74 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         if(mVideoFile != null) {
             mMediaRecorder.setOutputFile(mVideoFile.getAbsolutePath());
         } else Log.d(TAG, "ErrorVideoFile");
+
+
+        mMediaRecorder.setVideoEncodingBitRate(10000000);
+        mMediaRecorder.setVideoFrameRate(30);
+        //returns val/not entry
+        String vidDims = mSharedPreferences.getString(getString(R.string.pref_video_quality_key), "");
+
+        Log.d(TAG, vidDims);
+        String[] vidDimsArray = vidDims.split("x");
+
+        String vidWidth = vidDimsArray[0];
+        String vidHeight = vidDimsArray[1];
+        mMediaRecorder.setVideoSize(Integer.parseInt(vidWidth),Integer.parseInt(vidHeight));
+
+
+        String vidEncoder = mSharedPreferences.getString(getString(R.string.pref_video_encoding_key),"0");
+        String audioEncoder = mSharedPreferences.getString(getString(R.string.pref_audio_encoding_key),"0");
+
+        //hardcoded array
+        switch (vidEncoder) {
+
+            case "0":
+                mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+                break;
+            case "1":
+                mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H263);
+                break;
+            case "2":
+                //default generally
+                mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+                break;
+            case "3":
+                mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
+                break;
+            case "4":
+                mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.VP8);
+                break;
+        }
+
+        switch (audioEncoder) {
+
+            case "0":
+                mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+                break;
+            case "1":
+                //default generally
+                mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+                break;
+            case "2":
+                mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC_ELD);
+                break;
+            case "3":
+                mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+                break;
+            case "4":
+                mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB);
+                break;
+            case "5":
+                mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.HE_AAC);
+                break;
+            case "6":
+                mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.VORBIS);
+                break;
+        }
+
+
+
+
 //        mMediaRecorder.setOutputFile(getVideoFile(getActivity()).getAbsolutePath());
 //        mMediaRecorder.setVideoEncodingBitRate(10000000);
 //        mMediaRecorder.setVideoFrameRate(30);
@@ -1429,7 +1546,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                     "IMG_"+ timeStamp + ".jpg");
         } else if(type == MEDIA_TYPE_VIDEO) {
             mediaFile = new File(directory.getPath() + File.separator +
-                    "VID_"+ timeStamp + ".mp4");
+                    "VID_"+ timeStamp + MEDIA_EXTENSION);
         } else {
             return null;
         }

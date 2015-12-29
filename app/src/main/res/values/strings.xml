@@ -63,6 +63,7 @@
     <string name="pref_video_encoding_summary">Change the video encoding method</string>
     <string name="pref_audio_encoding_summary">Change the audio encoder</string>
     <string name="pref_audio_encoding_title">Audio Encoding</string>
+    <string name="pref_audio_encoding_key">audio_encoder</string>
 
 
 </resources>
