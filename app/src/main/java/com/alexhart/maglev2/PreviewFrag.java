@@ -19,7 +19,6 @@ import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.CamcorderProfile;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
@@ -44,6 +43,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -109,12 +109,13 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private Size mVideoSize;
     private Size mVideoPreviewSize;
     private MediaRecorder mMediaRecorder;
-    private Uri mVideoUri;
     boolean recording = false;
     private CameraCaptureSession mVideoCaptureSession;
 
 
     //camera members
+    private RelativeLayout mCameraClosedHolder;
+    private RelativeLayout mCameraOpenHolder;
     private boolean mCameraConfig = false;
     private Size mLargestImageSize;
     public static final int MEDIA_TYPE_IMAGE = 10;
@@ -238,9 +239,19 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
         setHasOptionsMenu(true);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-
-
         initUIListeners(v);
+
+
+
+        if (mSharedPreferences.getBoolean(getString(R.string.pref_camera_startup_key),true)){
+            mCameraClosedHolder.setVisibility(View.GONE);
+            mCameraOpenHolder.setVisibility(View.VISIBLE);
+        }else {
+            mCameraClosedHolder.setVisibility(View.VISIBLE);
+            mCameraOpenHolder.setVisibility(View.GONE);
+        }
+
+
 
 
         return v;
@@ -251,6 +262,15 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private void initUIListeners(View v) {
         Log.d(TAG, "initUI");
         initializeSeekBarVals();
+
+        mCameraClosedHolder = (RelativeLayout)v.findViewById(R.id.camera_closed_holder);
+        mCameraOpenHolder= (RelativeLayout)v.findViewById(R.id.camera_holder);
+
+        ImageView cameraClosedButton = (ImageView)v.findViewById(R.id.camera_closed_btn);
+        Button cameraClosedSettings = (Button)v.findViewById(R.id.camera_closed_settings_btn);
+
+        cameraClosedButton.setOnClickListener(this);
+        cameraClosedSettings.setOnClickListener(this);
 
         mTextureView = (AutoFitTextureView)v.findViewById(R.id.camera_preview);
 
@@ -414,8 +434,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                     mVideoButton.setImageResource(R.drawable.video_btn_active);
                     stopRecordingVideo();
                 }
-
-
                 break;
 
             case R.id.focus_button:
@@ -443,7 +461,20 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 Intent i = new Intent(getActivity(), PreferencesFragment.class);
                 i.putExtra("cameraID", mCameraId);
                 startActivity(i);
-
+                break;
+            case R.id.camera_closed_settings_btn:
+                Intent ii = new Intent(getActivity(), PreferencesFragment.class);
+                if (mCameraId != null) {
+                    ii.putExtra("cameraID", mCameraId);
+                }else {
+                    ii.putExtra("cameraID", "0");
+                }
+                startActivity(ii);
+                break;
+            case R.id.camera_closed_btn:
+                mCameraClosedHolder.setVisibility(View.GONE);
+                mCameraOpenHolder.setVisibility(View.VISIBLE);
+                break;
         }
 
 
