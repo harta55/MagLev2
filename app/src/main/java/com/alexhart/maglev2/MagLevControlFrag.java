@@ -46,6 +46,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
     private String TAG = "MaLevFrag";
 
     //UI members//
+    public static AutoFitTextureView mCameraPreviewMagLev;
     private EditText mBrightSet, mAmpSet, mFreqSet;
     private Switch mOffSwitch;
     private ListView mListView;
@@ -70,6 +71,9 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
 
     // Service state control
     private int mState;
+    private boolean inMagLevPreview = false;
+    final public static String CAMERA_PREVIEW = "com.alexhart.maglev2.galleryview.camera_preview";
+    final public static String MAGLEV_PREVIEW_STATE = "com.alexhart.maglev2.galleryview.maglev_prev_state";
     final private static int STATE_NONE = 0;
     final private static int STATE_BLUETOOTH_OFF = 1;
     final private static int STATE_DISCONNECTED = 2;
@@ -206,6 +210,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
 
                 break;
             case R.id.camera_button:
+                sendCameraBroadcast(CAMERA_PREVIEW);
                 break;
         }
     }
@@ -213,6 +218,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
 
     private void initUI(View v) {
 
+        mCameraPreviewMagLev = (AutoFitTextureView)v.findViewById(R.id.camera_preview_maglev);
         mBrightSet = (EditText)v.findViewById(R.id.brightness_set);
         mAmpSet = (EditText)v.findViewById(R.id.amplitude_set);
         mFreqSet = (EditText)v.findViewById(R.id.frequency_set);
@@ -299,58 +305,13 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
             }
         });
 
-//        mBrightSet.addTextChangedListener(new TextWatcher() {
-//            double brightVolt;
-//            String currentText;
-//            String newText;;
-//            boolean changeText = false;
-//            int valIndex;
-//
-//            @Override
-//            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//
-//
-//            }
-//
-//            @Override
-//            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//                if(changeText) {
-//                    return;
-//                }
-//
-//                if (mBrightSet.getText().length() > 0) {
-//                    currentText = mBrightSet.getText().toString();
-//                    valIndex = currentText.indexOf(" ");
-//                    if (valIndex == -1) {
-//                        brightVal = Integer.parseInt(currentText);
-//                    }else {
-//                        brightVal = Integer.parseInt(currentText.substring(0,valIndex));
-//                    }
-//
-//                    brightVolt = round(convertToVoltage(brightVal),2);
-//                    newText = currentText + "  (Volts: " + Double.toString(brightVolt) + ")";
-//                    changeText = true;
-//
-//                    mBrightSet.setText(newText, TextView.BufferType.EDITABLE);
-//                    changeText = false;
-//                    makeToast(mBrightSet.getText().toString());
-//                }
-//
-//
-//
-//            }
-//
-//            @Override
-//            public void afterTextChanged(Editable editable) {
-//
-//
-//            }
-//        });
-
 
     }
 
 
+    public static AutoFitTextureView getTexture() {
+        return mCameraPreviewMagLev;
+    }
 
 
     private boolean checkValues (int bright, int amp, int freq) {
@@ -638,7 +599,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                 if (resultCode == Activity.RESULT_OK) {
                     MediaScannerConnection.scanFile(getActivity().getApplicationContext(), new String[]{photoVideoIntent.getPath()}, null, null);
                     makeToast("Saved to: " + photoVideoIntent.getPath());
-                    sendCameraBroadcast();
+                    sendCameraBroadcast(GalleryViewFrag.CAMERA_ACTION);
 
                 }else if (resultCode == Activity.RESULT_CANCELED) {
                     makeToast("Photo cancelled!");
@@ -649,7 +610,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                 if (resultCode == Activity.RESULT_OK) {
                     makeToast("Saved to: " + photoVideoIntent.getPath());
                     MediaScannerConnection.scanFile(getActivity().getApplicationContext(), new String[]{photoVideoIntent.getPath()}, null, null);
-                    sendCameraBroadcast();
+                    sendCameraBroadcast(GalleryViewFrag.CAMERA_ACTION);
 
                 }else if (resultCode == Activity.RESULT_CANCELED) {
                     makeToast("Video cancelled!");
@@ -667,6 +628,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                 mLeDeviceListAdapter.clear();
                 if (mBluetoothAdapter.isEnabled()) {
                     updateState(STATE_SCANNING);
+                    mCameraPreviewMagLev.setVisibility(View.GONE);
                     scanLeDevice(true);
                 } else makeToast("Bluetooth not enabled!");
                 break;
@@ -700,8 +662,20 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
     }
 
 
-    private void sendCameraBroadcast() {
-        Intent i = new Intent(GalleryViewFrag.CAMERA_ACTION);
+    private void sendCameraBroadcast(String action) {
+        Intent i = new Intent(action);
+
+        if (action.equals(CAMERA_PREVIEW)) {
+            i.putExtra(MAGLEV_PREVIEW_STATE, inMagLevPreview);
+
+            if (inMagLevPreview) {
+                mCameraPreviewMagLev.setVisibility(View.GONE);
+                inMagLevPreview = false;
+            }else {
+                mCameraPreviewMagLev.setVisibility(View.VISIBLE);
+                inMagLevPreview = true;
+            }
+        }
         LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(i);
     }
 
@@ -711,6 +685,8 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
         Log.d(TAG, "OnPause");
         mLeDeviceListAdapter.clear();
         getActivity().unregisterReceiver(mGattUpdateReceiver);
+        mCameraPreviewMagLev.setVisibility(View.VISIBLE);
+
 
     }
 
@@ -737,11 +713,8 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
 
         mLeDeviceListAdapter = new LeDeviceListAdapter();
         getActivity().invalidateOptionsMenu();
-
         mListView.setAdapter(mLeDeviceListAdapter);
         getActivity().registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-
-//        openBackgroundThread();
 //
 //        mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
 

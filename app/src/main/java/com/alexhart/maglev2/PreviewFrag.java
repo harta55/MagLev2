@@ -1,8 +1,10 @@
 package com.alexhart.maglev2;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
@@ -89,6 +91,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private LinearLayout mLayoutIso;
     private TextView mSeekBarTextView;
     private AutoFitTextureView mTextureView;
+    private AutoFitTextureView mTextureView2;
     private RelativeLayout mLayoutBottom;
     private LinearLayout mLayoutAutoFoc;
     private RelativeLayout mLayoutCapture;
@@ -114,6 +117,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
 
     //camera members
+    private boolean afterCreate = false;
+    private boolean inMagLevPreview = false;
     private RelativeLayout mCameraClosedHolder;
     private RelativeLayout mCameraOpenHolder;
     private boolean mCameraConfig = false;
@@ -143,14 +148,18 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private float lastAETime;
     private int lastValueISO;
 
+    public static final String PREVIEW_ACTION = "com.alexhart.maglev2.previewfrag.PREVIEW_ACTION";
 
+    private boolean previewAlt = false;
     private CameraCharacteristics mCameraCharacteristics;
     private List<Surface> mOutputSurfaces;
     private Size mPreviewSize;
+    private Size mPreviewSize2;
     private File mWrittenFile;
     private File mVideoFile;
     private static String mImageFileLocation = "";
     private Surface mSurface;
+    private Surface mSurface2;
     private HandlerThread mBackgroundThread;
     private Handler mBackgroundHandler;
     private CaptureRequest.Builder mPreviewBuilder;
@@ -253,7 +262,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
 
 
-
+        afterCreate = true;
         return v;
     }
 
@@ -726,6 +735,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                 width, height, mLargestImageSize);
 
+        mTextureView2 = MagLevControlFrag.getTexture();
+        mPreviewSize2 = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                mTextureView2.getWidth(), mTextureView2.getHeight(), mLargestImageSize);
+
         mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
 
         mVideoPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width,
@@ -899,20 +912,26 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
         SurfaceTexture texture = mTextureView.getSurfaceTexture();
         texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+
+        SurfaceTexture texture2 = mTextureView2.getSurfaceTexture();
+        texture2.setDefaultBufferSize(mPreviewSize2.getWidth(),mPreviewSize2.getHeight());
+
         mSurface = new Surface(texture);
-        mOutputSurfaces = new ArrayList<Surface>(2);
+        mSurface2 = new Surface(texture2);
+        mOutputSurfaces = new ArrayList<Surface>(3);
         mOutputSurfaces.add(mImageReader.getSurface());
         mOutputSurfaces.add(mSurface);
+//        mOutputSurfaces.add(mSurface2);
     }
 
     private CameraDevice.StateCallback mCameraDeviceStateCallback = new CameraDevice.StateCallback() {
         @Override
-        public void onClosed(CameraDevice camera) {
+        public void onClosed(@NonNull CameraDevice camera) {
             Log.i("CameraStateCallback", "onClosed");
         }
 
         @Override
-        public void onOpened(CameraDevice cameraDevice) {
+        public void onOpened(@NonNull CameraDevice cameraDevice) {
             Log.i("Thread", "onOpened---->" + Thread.currentThread().getName());
             Log.i("CameraStateCallback", "onOpened");
 
@@ -951,6 +970,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             releaseVideoPreview();
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             //TEMPLATE_PREVIEW
+//            mPreviewBuilder.addTarget(mSurface);
             mPreviewBuilder.addTarget(mSurface);
             initPreviewBuilder();
             mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
@@ -961,13 +981,54 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 //            mCameraDevice.createCaptureSession(Arrays.asList(mSurface), mSessionPreviewStateCallback, mHandler);
             mCameraDevice.createCaptureSession(Arrays.asList(mSurface, mImageReader.getSurface()), mSessionPreviewStateCallback, mBackgroundHandler);
 
+//            mCameraDevice.createCaptureSession(mOutputSurfaces, mSessionPreviewStateCallback, mBackgroundHandler);
 
+            inMagLevPreview = false;
             inPicturePreview = true;
             inVideoPreview = false;
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
+
+    private void startPreviewMagLev() {
+        Log.d(TAG, "startPreview");
+        try {
+            releaseVideoPreview();
+            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mPreviewBuilder.addTarget(mSurface2);
+            initPreviewBuilder();
+            mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO);
+            mCameraState = STATE_CAMERA;
+            mCameraDevice.createCaptureSession(Arrays.asList(mSurface2, mImageReader.getSurface()), mSessionPreviewStateCallback, mBackgroundHandler);
+
+
+            inMagLevPreview = true;
+            inPicturePreview = true;
+            inVideoPreview = false;
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private final BroadcastReceiver mPreviewUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "Preview Broadcast Received");
+
+            inMagLevPreview = intent.getBooleanExtra(MagLevControlFrag.MAGLEV_PREVIEW_STATE, false);
+
+            if (inMagLevPreview) {
+                startPreview();
+            }else {
+                startPreviewMagLev();
+            }
+        }
+    };
 
     private void initPreviewBuilder() {
         Log.d(TAG, "initPrevBuilder");
@@ -1616,16 +1677,25 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     @Override
     public void onPause() {
         super.onPause();
+        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mPreviewUpdateReceiver);
 
         closeCamera();
         closeBackgroundThread();
         releaseMediaRecorder();
+
 
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        if (afterCreate) {
+            mCameraOpenHolder.setVisibility(View.GONE);
+            mCameraClosedHolder.setVisibility(View.VISIBLE);
+        }
+
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mPreviewUpdateReceiver,
+                new IntentFilter(MagLevControlFrag.CAMERA_PREVIEW));
 
         openBackgroundThread();
 
