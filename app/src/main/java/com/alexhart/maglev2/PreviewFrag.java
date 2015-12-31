@@ -924,10 +924,16 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         Log.d(TAG, "Pic dimensions: " + picDims);
         String[] picDimsArray = picDims.split("x");
 
-        String picWidth = picDimsArray[0];
-        String picHeight = picDimsArray[1];
-        mImageReader = ImageReader.newInstance(Integer.parseInt(picWidth),Integer.parseInt(picHeight),
-                ImageFormat.JPEG,2);
+        if (picDimsArray.length == 1) {
+            mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
+                    ImageFormat.JPEG,2);
+        } else {
+            String picWidth = picDimsArray[0];
+            String picHeight = picDimsArray[1];
+            mImageReader = ImageReader.newInstance(Integer.parseInt(picWidth),Integer.parseInt(picHeight),
+                    ImageFormat.JPEG,2);
+        }
+
 
         mImageReader.setOnImageAvailableListener(
                 mOnImageAvailableListener, mBackgroundHandler);
