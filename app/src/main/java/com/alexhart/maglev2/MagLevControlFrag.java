@@ -743,7 +743,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
         }
 
         mBluetoothLeService = null;
-
+        inMagLevPreview = false;
         mBluetoothAdapter.stopLeScan(mLeScanCallback);
 
     }

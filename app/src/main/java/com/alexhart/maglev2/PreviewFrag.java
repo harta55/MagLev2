@@ -1711,6 +1711,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         if (afterCreate) {
             mCameraOpenHolder.setVisibility(View.GONE);
             mCameraClosedHolder.setVisibility(View.VISIBLE);
+            mCameraSwapHolder.setVisibility(View.GONE);
         }
 
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mPreviewUpdateReceiver,
