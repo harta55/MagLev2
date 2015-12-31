@@ -149,16 +149,17 @@ public class PreferencesFragment extends Activity {
         public boolean onPreferenceChange(Preference preference, Object val) {
 
 
-
+            //needs constant ref otherwise
             if (preference.getKey().equals(getString(R.string.pref_picture_quality_key))) {
-
                 int index= mPictureQuality.findIndexOfValue(val.toString());
-                if (index!= -1)
-                {
-                    makeToast("Value: " + mPictureQuality.getEntries()[index]);
+                if (index != -1){
+                    makeToast("Res Set: " + mPictureQuality.getEntries()[index]);
                 }
-
-
+            } else if (preference.getKey().equals(getString(R.string.pref_video_quality_key))) {
+                int index = mVideoQuality.findIndexOfValue(val.toString());
+                if (index != -1) {
+                    makeToast("Res Set: " + mVideoQuality.getEntries()[index]);
+                }
             }
 
 

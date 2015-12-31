@@ -122,7 +122,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private RelativeLayout mCameraSwapHolder;
     private RelativeLayout mCameraClosedHolder;
     private RelativeLayout mCameraOpenHolder;
-    private boolean mCameraConfig = false;
+    public static boolean mCameraConfig = false;
     private Size mLargestImageSize;
     public static final int MEDIA_TYPE_IMAGE = 10;
     public static final int MEDIA_TYPE_VIDEO = 20;
@@ -770,7 +770,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     /**
      * Input choices of size for video recording
      * Size must be less than 1080 because of issues we had with reading 4k,
-     * TODO can probably fix and force higher res
+     * Now its taking size from preferences!
      *
      * @param choices     List of sizes from media recorder that are supported
      *
@@ -915,8 +915,20 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     }
     private void initOutputSurface() {
 
-        mImageReader = ImageReader.newInstance(mLargestImageSize.getWidth(), mLargestImageSize.getHeight(),
+//        mImageReader = ImageReader.newInstance(mLargestImageSize.getWidth(), mLargestImageSize.getHeight(),
+//                ImageFormat.JPEG,2);
+
+
+        String picDims = mSharedPreferences.getString(getString(R.string.pref_picture_quality_key), "");
+
+        Log.d(TAG, "Pic dimensions: " + picDims);
+        String[] picDimsArray = picDims.split("x");
+
+        String picWidth = picDimsArray[0];
+        String picHeight = picDimsArray[1];
+        mImageReader = ImageReader.newInstance(Integer.parseInt(picWidth),Integer.parseInt(picHeight),
                 ImageFormat.JPEG,2);
+
         mImageReader.setOnImageAvailableListener(
                 mOnImageAvailableListener, mBackgroundHandler);
 
@@ -993,6 +1005,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
 //            mCameraDevice.createCaptureSession(mOutputSurfaces, mSessionPreviewStateCallback, mBackgroundHandler);
 
+            MagLevControlFrag.setPreviewState(false);
             inMagLevPreview = false;
             inPicturePreview = true;
             inVideoPreview = false;
@@ -1023,6 +1036,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             mCameraDevice.createCaptureSession(Arrays.asList(mSurface2, mImageReader.getSurface()), mSessionPreviewStateCallback, mBackgroundHandler);
 
 
+            MagLevControlFrag.setPreviewState(true);
             inMagLevPreview = true;
             inPicturePreview = true;
             inVideoPreview = false;
@@ -1042,6 +1056,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             inMagLevPreview = intent.getBooleanExtra(MagLevControlFrag.MAGLEV_PREVIEW_STATE, false);
 
             if (inMagLevPreview) {
+                mCameraSwapHolder.setVisibility(View.GONE);
+                mCameraOpenHolder.setVisibility(View.VISIBLE);
                 startPreview();
             }else {
                 startPreviewMagLev();
@@ -1548,6 +1564,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 //        releaseMediaRecorder();
         createVideoPreviewSession();
 
+    }
+
+    public static boolean getCameraConfig() {
+        return PreviewFrag.mCameraConfig;
     }
 
 

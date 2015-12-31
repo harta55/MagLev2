@@ -184,9 +184,6 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                     break;
                 }
 
-
-
-
                 if (!checkValues(brightVal,ampVal,freqVal)){
                     makeToast("Error in values!");
                     break;
@@ -213,7 +210,11 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
 
                 break;
             case R.id.camera_button:
-                sendCameraBroadcast(CAMERA_PREVIEW);
+                mListView.setVisibility(View.GONE);
+                if (PreviewFrag.getCameraConfig()) {
+                    sendCameraBroadcast(CAMERA_PREVIEW);
+                } else makeToast("Camera not configured!");
+
                 break;
         }
     }
