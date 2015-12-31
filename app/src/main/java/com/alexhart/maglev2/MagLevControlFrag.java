@@ -11,6 +11,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraAccessException;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
@@ -24,6 +26,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -71,7 +74,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
 
     // Service state control
     private int mState;
-    private boolean inMagLevPreview = false;
+    private static boolean inMagLevPreview = false;
     final public static String CAMERA_PREVIEW = "com.alexhart.maglev2.galleryview.camera_preview";
     final public static String MAGLEV_PREVIEW_STATE = "com.alexhart.maglev2.galleryview.maglev_prev_state";
     final private static int STATE_NONE = 0;
@@ -219,6 +222,8 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
     private void initUI(View v) {
 
         mCameraPreviewMagLev = (AutoFitTextureView)v.findViewById(R.id.camera_preview_maglev);
+//        mCameraPreviewMagLev.setSurfaceTextureListener(mSurfaceTextureListener);
+
         mBrightSet = (EditText)v.findViewById(R.id.brightness_set);
         mAmpSet = (EditText)v.findViewById(R.id.amplitude_set);
         mFreqSet = (EditText)v.findViewById(R.id.frequency_set);
@@ -352,6 +357,43 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
         value = value * factor;
         long tmp = Math.round(value);
         return (double) tmp / factor;
+    }
+
+//    private TextureView.SurfaceTextureListener mSurfaceTextureListener =
+//            new TextureView.SurfaceTextureListener() {
+//                @Override
+//                public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+//                    Log.d(TAG, "onSurfaceTextAvailable");
+//
+//
+//
+//                }
+//                @Override
+//                public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+//                    Log.d(TAG, "onSurfaceTextChanged");
+//
+//
+//                }
+//                @Override
+//                public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+//                    Log.d(TAG, "onSurfaceTextDestroyed");
+//                    inMagLevPreview = false;
+//                    sendCameraBroadcast(CAMERA_PREVIEW);
+//                    return true;
+//                }
+//                @Override
+//                public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+//                }
+//            };
+
+
+    public static Boolean getPreviewState() {
+        return MagLevControlFrag.inMagLevPreview;
+    }
+
+    //todo switch from broadcasts
+    public static void setPreviewState(Boolean bool) {
+        MagLevControlFrag.inMagLevPreview = bool;
     }
 
     //-------------------------------------------------------//

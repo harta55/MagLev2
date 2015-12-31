@@ -119,6 +119,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     //camera members
     private boolean afterCreate = false;
     private boolean inMagLevPreview = false;
+    private RelativeLayout mCameraSwapHolder;
     private RelativeLayout mCameraClosedHolder;
     private RelativeLayout mCameraOpenHolder;
     private boolean mCameraConfig = false;
@@ -148,9 +149,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private float lastAETime;
     private int lastValueISO;
 
-    public static final String PREVIEW_ACTION = "com.alexhart.maglev2.previewfrag.PREVIEW_ACTION";
-
-    private boolean previewAlt = false;
     private CameraCharacteristics mCameraCharacteristics;
     private List<Surface> mOutputSurfaces;
     private Size mPreviewSize;
@@ -232,10 +230,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         ORIENTATIONS.append(Surface.ROTATION_270,180);
     }
 
-
-
-
-
     private static final String TAG = "PreviewFrag";
 
 
@@ -262,7 +256,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
 
 
-        afterCreate = true;
         return v;
     }
 
@@ -273,11 +266,14 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         initializeSeekBarVals();
 
         mCameraClosedHolder = (RelativeLayout)v.findViewById(R.id.camera_closed_holder);
-        mCameraOpenHolder= (RelativeLayout)v.findViewById(R.id.camera_holder);
+        mCameraOpenHolder = (RelativeLayout)v.findViewById(R.id.camera_holder);
+        mCameraSwapHolder = (RelativeLayout)v.findViewById(R.id.camera_swap_preview);
 
         ImageView cameraClosedButton = (ImageView)v.findViewById(R.id.camera_closed_btn);
         Button cameraClosedSettings = (Button)v.findViewById(R.id.camera_closed_settings_btn);
+        ImageView cameraSwapPreviewButton = (ImageView)v.findViewById(R.id.camera_preview_swap_btn);
 
+        cameraSwapPreviewButton.setOnClickListener(this);
         cameraClosedButton.setOnClickListener(this);
         cameraClosedSettings.setOnClickListener(this);
 
@@ -483,6 +479,13 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             case R.id.camera_closed_btn:
                 mCameraClosedHolder.setVisibility(View.GONE);
                 mCameraOpenHolder.setVisibility(View.VISIBLE);
+                break;
+            case R.id.camera_preview_swap_btn:
+                mCameraSwapHolder.setVisibility(View.GONE);
+                mCameraOpenHolder.setVisibility(View.VISIBLE);
+                startPreview();
+                MagLevControlFrag.setPreviewState(inMagLevPreview);
+
                 break;
         }
 
@@ -1009,6 +1012,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             inMagLevPreview = true;
             inPicturePreview = true;
             inVideoPreview = false;
+            mCameraOpenHolder.setVisibility(View.GONE);
+            mCameraSwapHolder.setVisibility(View.VISIBLE);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -1698,6 +1703,9 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 new IntentFilter(MagLevControlFrag.CAMERA_PREVIEW));
 
         openBackgroundThread();
+
+        afterCreate = true;
+
 
     }
 }
