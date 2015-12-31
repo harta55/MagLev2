@@ -988,15 +988,36 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     //start camera preview
     private void startPreview() {
         Log.d(TAG, "startPreview");
+        Float lastAF = null;
+        Rect lastZoom = null;
         try {
             releaseVideoPreview();
+
+            if (inMagLevPreview) {
+                lastAF = mPreviewBuilder.get(CaptureRequest.LENS_FOCUS_DISTANCE);
+                lastZoom = mPreviewBuilder.get(CaptureRequest.SCALER_CROP_REGION);
+            }
+
+
+
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             //TEMPLATE_PREVIEW
 //            mPreviewBuilder.addTarget(mSurface);
             mPreviewBuilder.addTarget(mSurface);
             initPreviewBuilder();
             mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+//            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_OFF);
+
+            if (inMagLevPreview && lastAF != null && lastZoom != null) {
+                mPreviewBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, lastAF);
+                mPreviewBuilder.set(CaptureRequest.SCALER_CROP_REGION, lastZoom);
+            } else {
+                mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+            }
+
+
             mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
             mPreviewBuilder.set(CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO);
             mCameraState = STATE_CAMERA;
@@ -1027,6 +1048,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             initPreviewBuilder();
             mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
 //            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_OFF);
             mPreviewBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, lastAF);
             mPreviewBuilder.set(CaptureRequest.SCALER_CROP_REGION, lastZoom);
 
