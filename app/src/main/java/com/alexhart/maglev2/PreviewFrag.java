@@ -477,8 +477,15 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 startActivity(ii);
                 break;
             case R.id.camera_closed_btn:
-                mCameraClosedHolder.setVisibility(View.GONE);
-                mCameraOpenHolder.setVisibility(View.VISIBLE);
+
+                if (MainActivity.surfaceTextInitiated) {
+                    mCameraClosedHolder.setVisibility(View.GONE);
+                    mCameraSwapHolder.setVisibility(View.GONE);
+                    mCameraOpenHolder.setVisibility(View.VISIBLE);
+                }else {
+                    makeToast("Please swipe left first");
+                }
+
                 break;
             case R.id.camera_preview_swap_btn:
                 mCameraSwapHolder.setVisibility(View.GONE);
@@ -998,11 +1005,18 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         Log.d(TAG, "startPreview");
         try {
             releaseVideoPreview();
+            Float lastAF = mPreviewBuilder.get(CaptureRequest.LENS_FOCUS_DISTANCE);
+            Rect lastZoom = mPreviewBuilder.get(CaptureRequest.SCALER_CROP_REGION);
+
+            //todo add previous whitebal, etc...
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mPreviewBuilder.addTarget(mSurface2);
             initPreviewBuilder();
             mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+//            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+            mPreviewBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, lastAF);
+            mPreviewBuilder.set(CaptureRequest.SCALER_CROP_REGION, lastZoom);
+
             mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
             mPreviewBuilder.set(CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO);
             mCameraState = STATE_CAMERA;
@@ -1703,6 +1717,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 new IntentFilter(MagLevControlFrag.CAMERA_PREVIEW));
 
         openBackgroundThread();
+
+
 
         afterCreate = true;
 
