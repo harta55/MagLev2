@@ -1,11 +1,7 @@
 package com.alexhart.maglev2;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -17,14 +13,10 @@ import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
-import android.preference.PreferenceManager;
-import android.preference.PreferenceScreen;
 import android.util.Log;
 import android.util.Size;
 import android.widget.Toast;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -108,6 +100,8 @@ public class PreferencesFragment extends Activity {
                     picSizeEntryVals[i] = Integer.toString(i);
                     i++;
                 }
+
+                //TODO fix default
                 mPictureQuality.setEntries(picSizeArray);
 //                mPictureQuality.setEntryValues(picSizeEntryVals);
                 mPictureQuality.setEntryValues(picSizeArray);
@@ -157,16 +151,17 @@ public class PreferencesFragment extends Activity {
         public boolean onPreferenceChange(Preference preference, Object val) {
 
 
-
+            //needs constant ref otherwise
             if (preference.getKey().equals(getString(R.string.pref_picture_quality_key))) {
-
                 int index= mPictureQuality.findIndexOfValue(val.toString());
-                if (index!= -1)
-                {
-                    makeToast("Value: " + mPictureQuality.getEntries()[index]);
+                if (index != -1){
+                    makeToast("Res Set: " + mPictureQuality.getEntries()[index]);
                 }
-
-
+            } else if (preference.getKey().equals(getString(R.string.pref_video_quality_key))) {
+                int index = mVideoQuality.findIndexOfValue(val.toString());
+                if (index != -1) {
+                    makeToast("Res Set: " + mVideoQuality.getEntries()[index]);
+                }
             }
 
 
@@ -185,8 +180,10 @@ public class PreferencesFragment extends Activity {
             super.onStop();
         }
 
-
-
+        @Override
+        public void onResume() {
+            super.onResume();
+        }
     }
     @Override
     protected void onDestroy() {
@@ -194,4 +191,8 @@ public class PreferencesFragment extends Activity {
 
     }
 
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
+    }
 }

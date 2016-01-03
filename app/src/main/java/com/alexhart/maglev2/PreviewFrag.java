@@ -1,8 +1,10 @@
 package com.alexhart.maglev2;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
@@ -89,6 +91,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private LinearLayout mLayoutIso;
     private TextView mSeekBarTextView;
     private AutoFitTextureView mTextureView;
+    private AutoFitTextureView mTextureView2;
     private RelativeLayout mLayoutBottom;
     private LinearLayout mLayoutAutoFoc;
     private RelativeLayout mLayoutCapture;
@@ -114,9 +117,12 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
 
     //camera members
+    private boolean afterCreate = false;
+    private boolean inMagLevPreview = false;
+    private RelativeLayout mCameraSwapHolder;
     private RelativeLayout mCameraClosedHolder;
     private RelativeLayout mCameraOpenHolder;
-    private boolean mCameraConfig = false;
+    public static boolean mCameraConfig = false;
     private Size mLargestImageSize;
     public static final int MEDIA_TYPE_IMAGE = 10;
     public static final int MEDIA_TYPE_VIDEO = 20;
@@ -143,14 +149,15 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private float lastAETime;
     private int lastValueISO;
 
-
     private CameraCharacteristics mCameraCharacteristics;
     private List<Surface> mOutputSurfaces;
     private Size mPreviewSize;
+    private Size mPreviewSize2;
     private File mWrittenFile;
     private File mVideoFile;
     private static String mImageFileLocation = "";
     private Surface mSurface;
+    private Surface mSurface2;
     private HandlerThread mBackgroundThread;
     private Handler mBackgroundHandler;
     private CaptureRequest.Builder mPreviewBuilder;
@@ -223,10 +230,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         ORIENTATIONS.append(Surface.ROTATION_270,180);
     }
 
-
-
-
-
     private static final String TAG = "PreviewFrag";
 
 
@@ -243,17 +246,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
 
 
-        if (mSharedPreferences.getBoolean(getString(R.string.pref_camera_startup_key),true)){
-            mCameraClosedHolder.setVisibility(View.GONE);
-            mCameraOpenHolder.setVisibility(View.VISIBLE);
-        }else {
-            mCameraClosedHolder.setVisibility(View.VISIBLE);
-            mCameraOpenHolder.setVisibility(View.GONE);
-        }
 
-
-
-
+        afterCreate = true;
         return v;
     }
 
@@ -264,11 +258,14 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         initializeSeekBarVals();
 
         mCameraClosedHolder = (RelativeLayout)v.findViewById(R.id.camera_closed_holder);
-        mCameraOpenHolder= (RelativeLayout)v.findViewById(R.id.camera_holder);
+        mCameraOpenHolder = (RelativeLayout)v.findViewById(R.id.camera_holder);
+        mCameraSwapHolder = (RelativeLayout)v.findViewById(R.id.camera_swap_preview);
 
         ImageView cameraClosedButton = (ImageView)v.findViewById(R.id.camera_closed_btn);
         Button cameraClosedSettings = (Button)v.findViewById(R.id.camera_closed_settings_btn);
+        ImageView cameraSwapPreviewButton = (ImageView)v.findViewById(R.id.camera_preview_swap_btn);
 
+        cameraSwapPreviewButton.setOnClickListener(this);
         cameraClosedButton.setOnClickListener(this);
         cameraClosedSettings.setOnClickListener(this);
 
@@ -472,8 +469,22 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 startActivity(ii);
                 break;
             case R.id.camera_closed_btn:
-                mCameraClosedHolder.setVisibility(View.GONE);
+
+                if (MainActivity.surfaceTextInitiated) {
+                    mCameraClosedHolder.setVisibility(View.GONE);
+                    mCameraSwapHolder.setVisibility(View.GONE);
+                    mCameraOpenHolder.setVisibility(View.VISIBLE);
+                }else {
+                    makeToast("Please swipe left first");
+                }
+
+                break;
+            case R.id.camera_preview_swap_btn:
+                mCameraSwapHolder.setVisibility(View.GONE);
                 mCameraOpenHolder.setVisibility(View.VISIBLE);
+                startPreview();
+                MagLevControlFrag.setPreviewState(inMagLevPreview);
+
                 break;
         }
 
@@ -726,6 +737,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                 width, height, mLargestImageSize);
 
+        mTextureView2 = MagLevControlFrag.getTexture();
+        mPreviewSize2 = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                mTextureView2.getWidth(), mTextureView2.getHeight(), mLargestImageSize);
+
         mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
 
         mVideoPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width,
@@ -747,7 +762,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     /**
      * Input choices of size for video recording
      * Size must be less than 1080 because of issues we had with reading 4k,
-     * TODO can probably fix and force higher res
+     * Now its taking size from preferences!
      *
      * @param choices     List of sizes from media recorder that are supported
      *
@@ -892,27 +907,51 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     }
     private void initOutputSurface() {
 
-        mImageReader = ImageReader.newInstance(mLargestImageSize.getWidth(), mLargestImageSize.getHeight(),
-                ImageFormat.JPEG,2);
+//        mImageReader = ImageReader.newInstance(mLargestImageSize.getWidth(), mLargestImageSize.getHeight(),
+//                ImageFormat.JPEG,2);
+
+
+        String picDims = mSharedPreferences.getString(getString(R.string.pref_picture_quality_key), "");
+
+        Log.d(TAG, "Pic dimensions: " + picDims);
+        String[] picDimsArray = picDims.split("x");
+
+        if (picDimsArray.length == 1) {
+            mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
+                    ImageFormat.JPEG,2);
+        } else {
+            String picWidth = picDimsArray[0];
+            String picHeight = picDimsArray[1];
+            mImageReader = ImageReader.newInstance(Integer.parseInt(picWidth),Integer.parseInt(picHeight),
+                    ImageFormat.JPEG,2);
+        }
+
+
         mImageReader.setOnImageAvailableListener(
                 mOnImageAvailableListener, mBackgroundHandler);
 
         SurfaceTexture texture = mTextureView.getSurfaceTexture();
         texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+
+        SurfaceTexture texture2 = mTextureView2.getSurfaceTexture();
+        texture2.setDefaultBufferSize(mPreviewSize2.getWidth(),mPreviewSize2.getHeight());
+
         mSurface = new Surface(texture);
-        mOutputSurfaces = new ArrayList<Surface>(2);
+        mSurface2 = new Surface(texture2);
+        mOutputSurfaces = new ArrayList<Surface>(3);
         mOutputSurfaces.add(mImageReader.getSurface());
         mOutputSurfaces.add(mSurface);
+//        mOutputSurfaces.add(mSurface2);
     }
 
     private CameraDevice.StateCallback mCameraDeviceStateCallback = new CameraDevice.StateCallback() {
         @Override
-        public void onClosed(CameraDevice camera) {
+        public void onClosed(@NonNull CameraDevice camera) {
             Log.i("CameraStateCallback", "onClosed");
         }
 
         @Override
-        public void onOpened(CameraDevice cameraDevice) {
+        public void onOpened(@NonNull CameraDevice cameraDevice) {
             Log.i("Thread", "onOpened---->" + Thread.currentThread().getName());
             Log.i("CameraStateCallback", "onOpened");
 
@@ -947,27 +986,105 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     //start camera preview
     private void startPreview() {
         Log.d(TAG, "startPreview");
+        Float lastAF = null;
+        Rect lastZoom = null;
         try {
             releaseVideoPreview();
+
+            if (inMagLevPreview) {
+                lastAF = mPreviewBuilder.get(CaptureRequest.LENS_FOCUS_DISTANCE);
+                lastZoom = mPreviewBuilder.get(CaptureRequest.SCALER_CROP_REGION);
+            }
+
+
+
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             //TEMPLATE_PREVIEW
+//            mPreviewBuilder.addTarget(mSurface);
             mPreviewBuilder.addTarget(mSurface);
             initPreviewBuilder();
             mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+//            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_OFF);
+
+            if (inMagLevPreview && lastAF != null && lastZoom != null) {
+                mPreviewBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, lastAF);
+                mPreviewBuilder.set(CaptureRequest.SCALER_CROP_REGION, lastZoom);
+            } else {
+                mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+            }
+
+
             mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
             mPreviewBuilder.set(CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO);
             mCameraState = STATE_CAMERA;
 //            mCameraDevice.createCaptureSession(Arrays.asList(mSurface), mSessionPreviewStateCallback, mHandler);
             mCameraDevice.createCaptureSession(Arrays.asList(mSurface, mImageReader.getSurface()), mSessionPreviewStateCallback, mBackgroundHandler);
 
+//            mCameraDevice.createCaptureSession(mOutputSurfaces, mSessionPreviewStateCallback, mBackgroundHandler);
 
+            MagLevControlFrag.setPreviewState(false);
+            inMagLevPreview = false;
             inPicturePreview = true;
             inVideoPreview = false;
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
+
+    private void startPreviewMagLev() {
+        Log.d(TAG, "startPreview");
+        try {
+            releaseVideoPreview();
+            Float lastAF = mPreviewBuilder.get(CaptureRequest.LENS_FOCUS_DISTANCE);
+            Rect lastZoom = mPreviewBuilder.get(CaptureRequest.SCALER_CROP_REGION);
+
+            //todo add previous whitebal, etc...
+            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mPreviewBuilder.addTarget(mSurface2);
+            initPreviewBuilder();
+            mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+//            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_OFF);
+            mPreviewBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, lastAF);
+            mPreviewBuilder.set(CaptureRequest.SCALER_CROP_REGION, lastZoom);
+
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO);
+            mCameraState = STATE_CAMERA;
+            mCameraDevice.createCaptureSession(Arrays.asList(mSurface2, mImageReader.getSurface()), mSessionPreviewStateCallback, mBackgroundHandler);
+
+
+            MagLevControlFrag.setPreviewState(true);
+            inMagLevPreview = true;
+            inPicturePreview = true;
+            inVideoPreview = false;
+            mCameraOpenHolder.setVisibility(View.GONE);
+            mCameraSwapHolder.setVisibility(View.VISIBLE);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private final BroadcastReceiver mPreviewUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "Preview Broadcast Received");
+
+            inMagLevPreview = intent.getBooleanExtra(MagLevControlFrag.MAGLEV_PREVIEW_STATE, false);
+
+            if (inMagLevPreview) {
+                mCameraSwapHolder.setVisibility(View.GONE);
+                mCameraOpenHolder.setVisibility(View.VISIBLE);
+                startPreview();
+            }else {
+                startPreviewMagLev();
+            }
+        }
+    };
 
     private void initPreviewBuilder() {
         Log.d(TAG, "initPrevBuilder");
@@ -1470,6 +1587,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
     }
 
+    public static boolean getCameraConfig() {
+        return PreviewFrag.mCameraConfig;
+    }
+
 
     private void releaseMediaRecorder(){
         if (recording) {
@@ -1616,18 +1737,47 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     @Override
     public void onPause() {
         super.onPause();
+        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mPreviewUpdateReceiver);
 
         closeCamera();
         closeBackgroundThread();
         releaseMediaRecorder();
+
 
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        if (afterCreate) {
+
+
+            if (mSharedPreferences.getBoolean(getString(R.string.pref_camera_startup_key),true)){
+                mCameraClosedHolder.setVisibility(View.GONE);
+                mCameraOpenHolder.setVisibility(View.VISIBLE);
+                mCameraSwapHolder.setVisibility(View.GONE);
+
+            }else {
+                mCameraClosedHolder.setVisibility(View.VISIBLE);
+                mCameraOpenHolder.setVisibility(View.GONE);
+                mCameraSwapHolder.setVisibility(View.GONE);
+
+            }
+        }else {
+            mCameraClosedHolder.setVisibility(View.VISIBLE);
+            mCameraOpenHolder.setVisibility(View.GONE);
+            mCameraSwapHolder.setVisibility(View.GONE);
+        }
+
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mPreviewUpdateReceiver,
+                new IntentFilter(MagLevControlFrag.CAMERA_PREVIEW));
 
         openBackgroundThread();
+
+
+
+        afterCreate = false;
+
 
     }
 }

@@ -1,27 +1,27 @@
 package com.alexhart.maglev2;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 /**
  * MainActivity that will swap out fragments through pagerAdapter
  */
 
 public class MainActivity extends ActionBarActivity {
+
+
+    private boolean backToExit = false;
+    public static boolean surfaceTextInitiated = false;
 
     ViewPager.OnPageChangeListener mOnPageChangeListener = new ViewPager.OnPageChangeListener() {
         @Override
@@ -33,6 +33,7 @@ public class MainActivity extends ActionBarActivity {
         public void onPageSelected(int position) {
             if (position == 0) {
                 inPreview = false;
+                surfaceTextInitiated = true;
             }else inPreview = true;
 
         }
@@ -98,6 +99,33 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
+
+    @Override
+    public void onBackPressed() {
+        if (backToExit) {
+            super.onBackPressed();
+            this.finish();
+            return;
+        }
+
+        this.backToExit= true;
+        Toast.makeText(this, "Press back again to exit!", Toast.LENGTH_SHORT).show();
+
+        new Handler().postDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                backToExit = false;
+
+            }
+        }, 2000);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        surfaceTextInitiated = false;
+    }
 }
 
 //dont need state pager adapter

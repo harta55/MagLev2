@@ -134,6 +134,12 @@
 
     </ListView>
 
+    <com.alexhart.maglev2.AutoFitTextureView
+        android:layout_width="match_parent" android:layout_height="match_parent"
+        android:id="@+id/camera_preview_maglev"
+        android:visibility="visible"
+        />
+
 
 
 </LinearLayout>

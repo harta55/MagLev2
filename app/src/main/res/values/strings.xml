@@ -64,6 +64,7 @@
     <string name="pref_audio_encoding_summary">Change the audio encoder</string>
     <string name="pref_audio_encoding_title">Audio Encoding</string>
     <string name="pref_audio_encoding_key">audio_encoder</string>
+    <string name="camera_preview_swap_text">Swap previews?</string>
 
 
 </resources>
