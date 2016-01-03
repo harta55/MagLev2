@@ -246,16 +246,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
 
 
-        if (mSharedPreferences.getBoolean(getString(R.string.pref_camera_startup_key),true)){
-            mCameraClosedHolder.setVisibility(View.GONE);
-            mCameraOpenHolder.setVisibility(View.VISIBLE);
-        }else {
-            mCameraClosedHolder.setVisibility(View.VISIBLE);
-            mCameraOpenHolder.setVisibility(View.GONE);
-        }
 
-
-
+        afterCreate = true;
         return v;
     }
 
@@ -1758,8 +1750,22 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     public void onResume() {
         super.onResume();
         if (afterCreate) {
-            mCameraOpenHolder.setVisibility(View.GONE);
+
+
+            if (mSharedPreferences.getBoolean(getString(R.string.pref_camera_startup_key),true)){
+                mCameraClosedHolder.setVisibility(View.GONE);
+                mCameraOpenHolder.setVisibility(View.VISIBLE);
+                mCameraSwapHolder.setVisibility(View.GONE);
+
+            }else {
+                mCameraClosedHolder.setVisibility(View.VISIBLE);
+                mCameraOpenHolder.setVisibility(View.GONE);
+                mCameraSwapHolder.setVisibility(View.GONE);
+
+            }
+        }else {
             mCameraClosedHolder.setVisibility(View.VISIBLE);
+            mCameraOpenHolder.setVisibility(View.GONE);
             mCameraSwapHolder.setVisibility(View.GONE);
         }
 
@@ -1770,7 +1776,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
 
 
-        afterCreate = true;
+        afterCreate = false;
 
 
     }

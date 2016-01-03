@@ -100,6 +100,8 @@ public class PreferencesFragment extends Activity {
                     picSizeEntryVals[i] = Integer.toString(i);
                     i++;
                 }
+
+                //TODO fix default
                 mPictureQuality.setEntries(picSizeArray);
 //                mPictureQuality.setEntryValues(picSizeEntryVals);
                 mPictureQuality.setEntryValues(picSizeArray);
@@ -178,8 +180,10 @@ public class PreferencesFragment extends Activity {
             super.onStop();
         }
 
-
-
+        @Override
+        public void onResume() {
+            super.onResume();
+        }
     }
     @Override
     protected void onDestroy() {
@@ -187,4 +191,8 @@ public class PreferencesFragment extends Activity {
 
     }
 
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
+    }
 }
