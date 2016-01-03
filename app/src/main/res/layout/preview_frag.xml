@@ -330,7 +330,7 @@
             android:id="@+id/camera_closed_settings_btn"
             android:background="@color/colorPrimaryDark"
             android:text="@string/action_settings"
-            android:layout_alignParentBottom="true"
+            android:layout_alignParentBottom="false"
             />
     </RelativeLayout>
 
