@@ -5,7 +5,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import com.alexhart.maglev2.GalleryViewFrag;
 import com.bumptech.glide.Glide;
 
 import java.io.File;
@@ -39,8 +41,17 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(ViewHolder holder, final int position) {
         File viewFile = mGalleryFiles[position];
+//
+//        holder.getImageView().setOnLongClickListener(new View.OnLongClickListener() {
+//            @Override
+//            public boolean onLongClick(View view) {
+//                mPositionInterface.getRecyclerViewAdapterPosition(position);
+//
+//                return true;
+//            }
+//        });
 
 
         //most efficient method
@@ -63,6 +74,15 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
             v.setOnClickListener(this);
             imageView = (ImageView) v;
 
+            v.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    GalleryViewFrag.setLongClick(true);
+                    mPositionInterface.getRecyclerViewAdapterPosition(getAdapterPosition());
+                    return true;
+
+                }
+            });
 //            v.setOnTouchListener(new View.OnTouchListener() {
 //                @Override
 //                public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -79,6 +99,8 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
         public void onClick(View view) {
             mPositionInterface.getRecyclerViewAdapterPosition(this.getAdapterPosition());
         }
+
+
 
 
     }

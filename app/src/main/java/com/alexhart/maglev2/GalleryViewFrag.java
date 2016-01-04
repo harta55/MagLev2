@@ -42,6 +42,8 @@ import java.util.Comparator;
  */
 public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPositionInter {
 
+    private boolean onLoadVid = false;
+    public static boolean onLongClick = false;
     private final static String TAG = "GalleryViewFrag";
     private File mGalleryDirectory;
     private RecyclerView mRecyclerView;
@@ -68,6 +70,7 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_gallery_view, container, false);
+
 
 
 
@@ -98,12 +101,14 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
         mSingleImageView = (ImageView) v.findViewById(R.id.imageView);
         mVideoView = (VideoView) v.findViewById(R.id.videoView);
 
+        mMediaController = new MediaController(getContext());
+        mMediaController.setAnchorView(mVideoView);
+        mVideoView.setMediaController(mMediaController);
 
         mSingleImageView.setOnTouchListener(mFullViewTouchListener);
         mVideoView.setOnTouchListener(mFullViewTouchListener);
         Log.d(TAG, "Width: " + mSingleImageView.getWidth());
         Log.d(TAG, "Height: " + mSingleImageView.getHeight());
-
 
     }
 
@@ -121,7 +126,9 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
                 }
             } else {
                 if (action == MotionEvent.ACTION_UP) {
-//                    mMediaController.show();
+                    if (mVideoFrame.getVisibility() == View.VISIBLE) {
+                        mMediaController.show();
+                    }
                 }
             }
 
@@ -145,8 +152,8 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
 
 //                mVideoView.stopPlayback();
 //                mVideoView.clearAnimation();
-
                 mVideoView.stopPlayback();
+                mMediaController.hide();
                 mVideoFrame.setVisibility(View.GONE);
                 mRecyclerView.setVisibility(View.VISIBLE);
 
@@ -196,9 +203,10 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
     public void getRecyclerViewAdapterPosition(int position) {
         mSelectedFile = sortFiles(mGalleryDirectory)[position];
 
-        openFullscreenImage(mSelectedFile);
-
-
+        if (onLongClick) {
+            createPhotoDeleteAlert(mSelectedFile, "Delete the selected file: ");
+            onLongClick = false;
+        } else openFullscreenImage(mSelectedFile);
 
     }
 
@@ -230,18 +238,13 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
         }else if (file.getName().contains("VID")) {
             mRecyclerView.setVisibility(View.GONE);
             mVideoFrame.setVisibility(View.VISIBLE);
-
+            onLoadVid = true;
 
             try {
 
-
-                //TODO fix media controller/make own
-//                mMediaController = new MediaController(this.getActivity().getApplicationContext());
-//                mMediaController.setEnabled(true);
-//                mVideoView.setMediaController(mMediaController);
-
                 mVideoView.setVideoURI(Uri.fromFile(file));
                 mVideoView.requestFocus();
+
             } catch (Exception e) {
                 e.printStackTrace();
                 mRecyclerView.setVisibility(View.VISIBLE);
@@ -250,8 +253,16 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
             mVideoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 // Close the progress bar and play the video
                 public void onPrepared(MediaPlayer mp) {
+                    Log.d(TAG, "OnPreparedVideo");
                     try {
-                        mVideoView.start();
+                        if (onLoadVid) {
+                            mVideoView.start();
+                            mMediaController.show();
+                        } else {
+                            mRecyclerView.setVisibility(View.VISIBLE);
+                            mVideoFrame.setVisibility(View.GONE);
+                        }
+
                     } catch (Exception e) {
                         e.printStackTrace();
 
@@ -267,8 +278,6 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
                     try {
                         mediaPlayer.stop();
                         mediaPlayer.reset();
-//                        mediaPlayer.release();
-
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -284,13 +293,21 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
 
                     //file read error
                     if (i == 1 && i1 == 0) {
-                        createPhotoDeleteAlart(mSelectedFile);
+                        createPhotoDeleteAlert(mSelectedFile, "Error in reading file: ");
                     }
 
                     return true;
                 }
             });
 
+            mVideoView.setOnInfoListener(new MediaPlayer.OnInfoListener() {
+                @Override
+                public boolean onInfo(MediaPlayer mediaPlayer, int i, int i1) {
+                    Log.d(TAG, "Info: " + i + ", " + i1);
+
+                    return false;
+                }
+            });
 
         }
 
@@ -316,11 +333,11 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
 
     }
 
-    private void createPhotoDeleteAlart(final File file) {
+    private void createPhotoDeleteAlert(final File file, String msg) {
 
         final AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
         alert.setTitle("Delete File?");
-        alert.setMessage("Error in reading file: " + file.getAbsolutePath());
+        alert.setMessage(msg + file.getAbsolutePath());
 
         alert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
@@ -350,6 +367,10 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
         alert.show();
     }
 
+    public static void setLongClick(boolean bool) {
+        onLongClick = bool;
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -373,6 +394,12 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
     public void onPause() {
         super.onPause();
 
+        onLoadVid = false;
+        try {
+            mVideoView.stopPlayback();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mCameraUpdateReceiver);
 
     }
