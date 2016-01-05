@@ -135,15 +135,6 @@ public class PreferencesFragment extends Activity {
 
 
             }
-
-
-
-
-            //TODO fix pref size/format selection
-
-
-
-
         }
 
 

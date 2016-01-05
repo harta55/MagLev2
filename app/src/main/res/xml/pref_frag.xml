@@ -50,7 +50,7 @@
             android:key="@string/pref_camera_startup_key"
             android:summary="@string/pref_camera_startup_summary"
             android:title="@string/pref_camera_startup_title"
-            android:defaultValue="true"/>
+            android:defaultValue="false"/>
 
     </PreferenceCategory>
 

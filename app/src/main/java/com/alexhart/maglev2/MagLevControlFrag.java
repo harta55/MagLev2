@@ -708,18 +708,28 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
     private void sendCameraBroadcast(String action) {
         Intent i = new Intent(action);
 
-        if (action.equals(CAMERA_PREVIEW)) {
-            i.putExtra(MAGLEV_PREVIEW_STATE, inMagLevPreview);
 
-            if (inMagLevPreview) {
-                mCameraPreviewMagLev.setVisibility(View.GONE);
-                inMagLevPreview = false;
-            }else {
-                mCameraPreviewMagLev.setVisibility(View.VISIBLE);
-                inMagLevPreview = true;
-            }
+        switch (action) {
+            case (MagLevControlFrag.CAMERA_PREVIEW):
+
+                i.putExtra(MAGLEV_PREVIEW_STATE, inMagLevPreview);
+
+                if (inMagLevPreview) {
+                    mCameraPreviewMagLev.setVisibility(View.GONE);
+                    inMagLevPreview = false;
+                }else {
+                    mCameraPreviewMagLev.setVisibility(View.VISIBLE);
+                    inMagLevPreview = true;
+                }
+                break;
+
+            case (MainActivity.CAMERA_RESTART):
+                break;
+
         }
         LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(i);
+        Log.d(TAG, "Broadcast: " + action);
+
     }
 
     @Override
@@ -758,7 +768,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
         getActivity().invalidateOptionsMenu();
         mListView.setAdapter(mLeDeviceListAdapter);
         getActivity().registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-//
+
 //        mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
 
     }

@@ -70,8 +70,7 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_gallery_view, container, false);
-
-
+        Log.d(TAG, "OnCreateView");
 
 
         createGallery();
@@ -250,6 +249,7 @@ public class GalleryViewFrag extends Fragment implements RecyclerViewAdapterPosi
                 mRecyclerView.setVisibility(View.VISIBLE);
                 mVideoFrame.setVisibility(View.GONE);
             }
+            //TODO fix mediaPlayer resource cleanup
             mVideoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 // Close the progress bar and play the video
                 public void onPrepared(MediaPlayer mp) {

@@ -474,6 +474,15 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                     mCameraClosedHolder.setVisibility(View.GONE);
                     mCameraSwapHolder.setVisibility(View.GONE);
                     mCameraOpenHolder.setVisibility(View.VISIBLE);
+
+                    if (mTextureView.isAvailable()) {
+                        try {
+                            openCamera(mTextureView.getWidth(), mTextureView.getHeight());
+                        } catch (CameraAccessException | InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                 }else {
                     makeToast("Please swipe left first");
                 }
@@ -689,19 +698,18 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 @Override
                 public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
                     Log.d(TAG, "onSurfaceTextChanged");
-
-                    if (MainActivity.inPreview && !mCameraConfig) {
-                        try {
-                            openCamera(width, height);
-                        } catch (CameraAccessException e) {
-                            e.printStackTrace();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                    }else if (MainActivity.inPreview && mCameraConfig) {
-                        configureTransform(width, height);
-                    }
+//                    if (MainActivity.inPreview && !mCameraConfig) {
+//                        try {
+//                            openCamera(width, height);
+//                        } catch (CameraAccessException e) {
+//                            e.printStackTrace();
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
+//
+//                    }else if (MainActivity.inPreview && mCameraConfig) {
+//                        configureTransform(width, height);
+//                    }
 
                 }
                 @Override
@@ -1034,7 +1042,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     }
 
     private void startPreviewMagLev() {
-        Log.d(TAG, "startPreview");
+        Log.d(TAG, "startMagLevPreview");
         try {
             releaseVideoPreview();
             Float lastAF = mPreviewBuilder.get(CaptureRequest.LENS_FOCUS_DISTANCE);
@@ -1074,15 +1082,46 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "Preview Broadcast Received");
 
-            inMagLevPreview = intent.getBooleanExtra(MagLevControlFrag.MAGLEV_PREVIEW_STATE, false);
 
-            if (inMagLevPreview) {
-                mCameraSwapHolder.setVisibility(View.GONE);
-                mCameraOpenHolder.setVisibility(View.VISIBLE);
-                startPreview();
-            }else {
-                startPreviewMagLev();
+            switch (intent.getAction()) {
+
+                case (MagLevControlFrag.CAMERA_PREVIEW):
+                    inMagLevPreview = intent.getBooleanExtra(MagLevControlFrag.MAGLEV_PREVIEW_STATE, false);
+
+                    if (inMagLevPreview) {
+                        mCameraSwapHolder.setVisibility(View.GONE);
+                        mCameraOpenHolder.setVisibility(View.VISIBLE);
+                        mCameraClosedHolder.setVisibility(View.GONE);
+                        startPreview();
+                    }else {
+                        startPreviewMagLev();
+                    }
+                    break;
+
+                case (MainActivity.CAMERA_RESTART):
+//                    closeCamera();
+//                    try {
+//                        openCamera(mTextureView.getWidth(), mTextureView.getHeight());
+//                    } catch (CameraAccessException | InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+                    break;
+
+                case (MainActivity.CAMERA_CLOSE):
+                    if (inPicturePreview || inVideoPreview) {
+                        releaseCameraPreview();
+                        releaseVideoPreview();
+                        closeCamera();
+                        releaseMediaRecorder();
+                        mCameraOpenHolder.setVisibility(View.GONE);
+                        mCameraClosedHolder.setVisibility(View.VISIBLE);
+                        mCameraSwapHolder.setVisibility(View.GONE);
+
+                    }
+
             }
+
+
         }
     };
 
@@ -1769,8 +1808,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             mCameraSwapHolder.setVisibility(View.GONE);
         }
 
+        IntentFilter filter = new IntentFilter(MagLevControlFrag.CAMERA_PREVIEW);
+        filter.addAction(MainActivity.CAMERA_CLOSE);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mPreviewUpdateReceiver,
-                new IntentFilter(MagLevControlFrag.CAMERA_PREVIEW));
+                filter);
 
         openBackgroundThread();
 
