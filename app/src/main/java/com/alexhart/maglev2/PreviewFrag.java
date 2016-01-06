@@ -175,7 +175,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                                 mWrittenFile));
                         scanFile(mWrittenFile.getAbsolutePath());
                         makeToast("Photo saved: " + mWrittenFile.getAbsolutePath());
-                        sendCameraBroadcast();
+//                        sendCameraBroadcast();
 
 
                     } catch (IOException e) {
@@ -1598,8 +1598,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 //        previewBuilder2CaptureBuilder();
 //        mCameraState = STATE_CAMERA;
 
-
-        // Start recording
         mMediaRecorder.start();
 
     }
@@ -1613,14 +1611,11 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 //            e.printStackTrace();
 //        }
         recording = false;
-        // Stop recording
         mMediaRecorder.stop();
         mMediaRecorder.reset();
         scanFile(mVideoFile.getAbsolutePath());
         makeToast("Video saved: " + mVideoFile.getAbsolutePath());
-        sendCameraBroadcast();
-
-
+//        sendCameraBroadcast();
 //        releaseMediaRecorder();
         createVideoPreviewSession();
 
@@ -1749,11 +1744,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
     private void makeToast(String msg) {
         Toast.makeText(getActivity(), msg, Toast.LENGTH_SHORT).show();
-    }
-
-    private void sendCameraBroadcast() {
-        Intent i = new Intent(GalleryViewFrag.CAMERA_ACTION);
-        LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(i);
     }
 
     @Override

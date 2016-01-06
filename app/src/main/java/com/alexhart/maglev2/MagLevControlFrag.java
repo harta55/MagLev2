@@ -642,7 +642,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                 if (resultCode == Activity.RESULT_OK) {
                     MediaScannerConnection.scanFile(getActivity().getApplicationContext(), new String[]{photoVideoIntent.getPath()}, null, null);
                     makeToast("Saved to: " + photoVideoIntent.getPath());
-                    sendCameraBroadcast(GalleryViewFrag.CAMERA_ACTION);
+//                    sendCameraBroadcast(GalleryViewFrag.CAMERA_ACTION);
 
                 }else if (resultCode == Activity.RESULT_CANCELED) {
                     makeToast("Photo cancelled!");
@@ -653,7 +653,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                 if (resultCode == Activity.RESULT_OK) {
                     makeToast("Saved to: " + photoVideoIntent.getPath());
                     MediaScannerConnection.scanFile(getActivity().getApplicationContext(), new String[]{photoVideoIntent.getPath()}, null, null);
-                    sendCameraBroadcast(GalleryViewFrag.CAMERA_ACTION);
+//                    sendCameraBroadcast(GalleryViewFrag.CAMERA_ACTION);
 
                 }else if (resultCode == Activity.RESULT_CANCELED) {
                     makeToast("Video cancelled!");

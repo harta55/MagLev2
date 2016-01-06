@@ -54,6 +54,7 @@ public class MainActivity extends ActionBarActivity {
                 case 2:
                     surfaceTextInitiated = false;
                     sendCameraBroadcast(MainActivity.CAMERA_CLOSE);
+                    sendCameraBroadcast(GalleryViewFrag.CAMERA_ACTION);
                     inPreview = true;
                     prevPosition = 2;
                     break;
