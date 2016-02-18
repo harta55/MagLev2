@@ -79,7 +79,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
     //
     private SharedPreferences mSharedPreferences;
-    private boolean mRecording = false;
     private ImageView mVideoButton;
     private Switch mSwitchAutoFoc;
     private boolean inPicturePreview = false;
@@ -649,12 +648,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     }
 
 
-
-
-
-
-
-
     //-------------------------------------------------------//
     //------------- CAMERA AND VIDEO MANAGEMENT--------------//
     //-------------------------------------------------------//
@@ -728,6 +721,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 width, height, mLargestImageSize);
 
         mTextureView2 = MagLevControlFrag.getTexture();
+        mTextureView2.setAspectRatio(9, 16);
+
         mPreviewSize2 = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                 mTextureView2.getWidth(), mTextureView2.getHeight(), mLargestImageSize);
 
@@ -1676,6 +1671,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private void makeToast(String msg) {
         Toast.makeText(getActivity(), msg, Toast.LENGTH_SHORT).show();
     }
+
+
 
     @Override
     public void onAttach(Activity activity) {
