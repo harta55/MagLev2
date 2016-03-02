@@ -39,8 +39,6 @@ public class PreferencesFragment extends Activity {
 //        Toast.makeText(this, "Cameraid" + mCameraID, Toast.LENGTH_SHORT).show();
         //display preferences fragment as only fragment in activity
         getFragmentManager().beginTransaction().replace(android.R.id.content, new PrefsFrag()).commit();
-
-
     }
 
     public static class PrefsFrag extends PreferenceFragment implements Preference.OnPreferenceChangeListener{
@@ -52,16 +50,11 @@ public class PreferencesFragment extends Activity {
         private CameraManager mCameraManager;
         private CameraCharacteristics mCameraCharacteristics;
 
-
-
-
         @Override
         public void onCreate(final Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.pref_frag);
             initUI();
-
-
         }
 
         private void initUI() {
@@ -73,7 +66,6 @@ public class PreferencesFragment extends Activity {
 
             mPictureQuality.setOnPreferenceChangeListener(this);
             mVideoQuality.setOnPreferenceChangeListener(this);
-
 
             mCameraManager = (CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);
             try {
@@ -126,21 +118,16 @@ public class PreferencesFragment extends Activity {
 //                        vidSizeEntryList.add(Integer.toString(i));
                         vidSizeEntryList.add(vidSize.toString());
                     }
-
                     i++;
                 }
 
                 mVideoQuality.setEntries(vidSizeList.toArray(new String[vidSizeList.size()]));
                 mVideoQuality.setEntryValues(vidSizeEntryList.toArray(new String[vidSizeEntryList.size()]));
-
-
             }
         }
 
-
         @Override
         public boolean onPreferenceChange(Preference preference, Object val) {
-
 
             //needs constant ref otherwise
             if (preference.getKey().equals(getString(R.string.pref_picture_quality_key))) {
@@ -154,13 +141,8 @@ public class PreferencesFragment extends Activity {
                     makeToast("Res Set: " + mVideoQuality.getEntries()[index]);
                 }
             }
-
-
             return true;
         }
-
-
-
 
         private void makeToast(String msg) {
             Toast.makeText(getActivity(), msg, Toast.LENGTH_SHORT).show();
@@ -179,7 +161,6 @@ public class PreferencesFragment extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
     }
 
     @Override

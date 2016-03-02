@@ -75,12 +75,11 @@ import java.util.List;
  *
  *
  */
-public class PreviewFrag extends Fragment implements View.OnClickListener{
+public class PreviewFrag extends Fragment implements View.OnClickListener {
 
     //
     private SharedPreferences mSharedPreferences;
     private ImageView mVideoButton;
-    private Switch mSwitchAutoFoc;
     private boolean inPicturePreview = false;
     private boolean inVideoPreview = false;
 
@@ -107,8 +106,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private static final int SHOW_ISO = 4;
     private static final int SHOW_ZOOM = 5;
 
-    //video members
-    private Size mVideoSize;
     private Size mVideoPreviewSize;
     private MediaRecorder mMediaRecorder;
     boolean recording = false;
@@ -116,6 +113,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
 
     //camera members
+    private boolean manualSupport;
+    private int[] mCameraCapabilitiesList;
     private boolean mMediaPrepared = false;
     private boolean afterCreate = false;
     private boolean inMagLevPreview = false;
@@ -123,7 +122,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private RelativeLayout mCameraClosedHolder;
     private RelativeLayout mCameraOpenHolder;
     public static boolean mCameraConfig = false;
-    private Size mLargestImageSize;
     public static final int MEDIA_TYPE_IMAGE = 10;
     public static final int MEDIA_TYPE_VIDEO = 20;
     public static String MEDIA_EXTENSION = "";
@@ -136,7 +134,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private CameraDevice mCameraDevice = null;
     //front facing camera has id 0, LOCKED on this
     private String mCameraId = "0";
-    private CaptureRequest mPreviewCaptureRequest;
     private CameraCaptureSession mCameraCaptureSession;
     private float valueAF;
     private int valueAE;
@@ -145,23 +142,20 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     //TODO add in last vals to exposure pipeline
     private Float lastAF = null;
     private Rect lastZoom = null;
-    private long lastValueAETime;
-    private int lastValueAEComp;
-    private int lastValueISO;
 
     private CameraCharacteristics mCameraCharacteristics;
     private List<Surface> mOutputSurfaces;
     private Size mPreviewSize;
     private Size mPreviewSize2;
-    private File mWrittenFile;
     private File mVideoFile;
-    private static String mImageFileLocation = "";
     private Surface mSurface;
     private Surface mSurface2;
     private HandlerThread mBackgroundThread;
     private Handler mBackgroundHandler;
     private CaptureRequest.Builder mPreviewBuilder;
     private CaptureRequest.Builder mCaptureBuilder;
+
+    private static final String TAG = "PreviewFrag";
 
     private ImageReader mImageReader;
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener =
@@ -170,11 +164,11 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 public void onImageAvailable(ImageReader reader) {
                     Log.d(TAG, "OnImageAvail");
                     try {
-                        mWrittenFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+                        File writtenFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
                         mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(),
-                                mWrittenFile));
-                        scanFile(mWrittenFile.getAbsolutePath());
-                        makeToast("Photo saved: " + mWrittenFile.getAbsolutePath());
+                                writtenFile));
+                        scanFile(writtenFile.getAbsolutePath());
+                        makeToast("Photo saved: " + writtenFile.getAbsolutePath());
 //                        sendCameraBroadcast();
 
 
@@ -187,9 +181,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private static class ImageSaver implements Runnable {
         private Image mImage;
         private File mFile;
+
         private ImageSaver(Image image, File file) {
             mImage = image;
-            mFile=file;
+            mFile = file;
         }
 
 
@@ -207,10 +202,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 fileOutputStream.write(bytes);
             } catch (IOException e) {
                 e.printStackTrace();
-            } finally{
+            } finally {
 
                 mImage.close();
-                if (fileOutputStream != null){
+                if (fileOutputStream != null) {
                     try {
                         fileOutputStream.close();
                     } catch (IOException e) {
@@ -221,23 +216,25 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         }
     }
 
-
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+
     static {
-        ORIENTATIONS.append(Surface.ROTATION_0,90);
-        ORIENTATIONS.append(Surface.ROTATION_90,0);
-        ORIENTATIONS.append(Surface.ROTATION_180,270);
-        ORIENTATIONS.append(Surface.ROTATION_270,180);
+        ORIENTATIONS.append(Surface.ROTATION_0, 90);
+        ORIENTATIONS.append(Surface.ROTATION_90, 0);
+        ORIENTATIONS.append(Surface.ROTATION_180, 270);
+        ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
-
-    private static final String TAG = "PreviewFrag";
-
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.preview_frag, container, false);
 
+        //check API level for compatability
+//                    if (Integer.valueOf(android.os.Build.VERSION.SDK) < 21) {
+//                        makeToast("Camera function not supported by your phone! :(");
+//                        break;
+//                    }
         Log.d(TAG, "onCreateView");
 
         mCameraState = STATE_CAMERA;
@@ -245,32 +242,28 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         initUIListeners(v);
 
-
-
-
         afterCreate = true;
         return v;
     }
-
 
 
     private void initUIListeners(View v) {
         Log.d(TAG, "initUI");
         initializeSeekBarVals();
 
-        mCameraClosedHolder = (RelativeLayout)v.findViewById(R.id.camera_closed_holder);
-        mCameraOpenHolder = (RelativeLayout)v.findViewById(R.id.camera_holder);
-        mCameraSwapHolder = (RelativeLayout)v.findViewById(R.id.camera_swap_preview);
+        mCameraClosedHolder = (RelativeLayout) v.findViewById(R.id.camera_closed_holder);
+        mCameraOpenHolder = (RelativeLayout) v.findViewById(R.id.camera_holder);
+        mCameraSwapHolder = (RelativeLayout) v.findViewById(R.id.camera_swap_preview);
 
-        ImageView cameraClosedButton = (ImageView)v.findViewById(R.id.camera_closed_btn);
-        Button cameraClosedSettings = (Button)v.findViewById(R.id.camera_closed_settings_btn);
-        ImageView cameraSwapPreviewButton = (ImageView)v.findViewById(R.id.camera_preview_swap_btn);
+        ImageView cameraClosedButton = (ImageView) v.findViewById(R.id.camera_closed_btn);
+        Button cameraClosedSettings = (Button) v.findViewById(R.id.camera_closed_settings_btn);
+        ImageView cameraSwapPreviewButton = (ImageView) v.findViewById(R.id.camera_preview_swap_btn);
 
         cameraSwapPreviewButton.setOnClickListener(this);
         cameraClosedButton.setOnClickListener(this);
         cameraClosedSettings.setOnClickListener(this);
 
-        mTextureView = (AutoFitTextureView)v.findViewById(R.id.camera_preview);
+        mTextureView = (AutoFitTextureView) v.findViewById(R.id.camera_preview);
 
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
 
@@ -282,7 +275,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         mLayoutBottom = (RelativeLayout) v.findViewById(R.id.bottom_layout);
 
         mLayoutAutoFoc = (LinearLayout) v.findViewById(R.id.focus_layout);
-        mSwitchAutoFoc = (Switch) v.findViewById(R.id.focus_switch);
+        Switch switchAutoFoc = (Switch) v.findViewById(R.id.focus_switch);
         SeekBar seekAutoFoc = (SeekBar) v.findViewById(R.id.focus_seekbar);
 
         mLayoutIso = (LinearLayout) v.findViewById(R.id.iso_layout);
@@ -349,11 +342,11 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         mVideoButton.setOnClickListener(this);
 
         CheckListener mCheckListener = new CheckListener();
-        mSwitchAutoFoc.setOnCheckedChangeListener(mCheckListener);
+        switchAutoFoc.setOnCheckedChangeListener(mCheckListener);
         switchAutoExp.setOnCheckedChangeListener(mCheckListener);
         switchIso.setOnCheckedChangeListener(mCheckListener);
 
-        mSwitchAutoFoc.setChecked(true);
+        switchAutoFoc.setChecked(true);
         switchIso.setChecked(true);
         switchAutoExp.setChecked(true);
 
@@ -362,7 +355,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         seekAutoExp.setOnSeekBarChangeListener(mSeekListener);
         seekZoom.setOnSeekBarChangeListener(mSeekListener);
         seekIso.setOnSeekBarChangeListener(mSeekListener);
-
 
         seekAutoFoc.setEnabled(false);
         seekIso.setEnabled(false);
@@ -377,7 +369,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         seekIso.setProgress(50);
         seekZoom.setProgress(0);
 
-
         mLayoutList = new ArrayList<View>();
         mLayoutList.add(mLayoutBottom);//0
         mLayoutList.add(mLayoutAutoFoc);//1
@@ -385,7 +376,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         mLayoutList.add(layoutAutoWhiteBal);//3
         mLayoutList.add(mLayoutIso);//4
         mLayoutList.add(layoutZoom);//5
-
     }
 
     private void initializeSeekBarVals() {
@@ -399,7 +389,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.video_button:
-
                 if (inPicturePreview && !recording) {
                     mCameraState = STATE_VIDEO;
                     mVideoButton.setImageResource(R.drawable.video_btn_active);
@@ -415,23 +404,42 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 break;
 
             case R.id.focus_button:
+                if (!manualSupport) {
+                    makeToast("Your device does not support manual focus, turning on auto focus...");
+                    mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                    mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+                    updatePreview();
+                    return;
+                }
                 showAutoFocFlag = !showAutoFocFlag;
                 showLayout(SHOW_AUTOFOC, showAutoFocFlag);
                 break;
 
             case R.id.zoom_button:
                 showZoomFlag = !showZoomFlag;
-                showLayout(SHOW_ZOOM,showZoomFlag);
+                showLayout(SHOW_ZOOM, showZoomFlag);
                 break;
             case R.id.autoExp_button:
+                if (!manualSupport) {
+                    makeToast("Your device does not support manual control!");
+                    return;
+                }
                 showAutoExpFlag = !showAutoExpFlag;
                 showLayout(SHOW_AUTOEXP, showAutoExpFlag);
                 break;
             case R.id.autowhitebal_button:
+                if (!manualSupport) {
+                    makeToast("Your device does not support manual control!");
+                    return;
+                }
                 showAutoWhitBalFlag = !showAutoWhitBalFlag;
                 showLayout(SHOW_AUTOWHITBAL, showAutoWhitBalFlag);
                 break;
             case R.id.iso_button:
+                if (!manualSupport) {
+                    makeToast("Your device does not support manual control!");
+                    return;
+                }
                 showIsoFlag = !showIsoFlag;
                 showLayout(SHOW_ISO, showIsoFlag);
                 break;
@@ -444,7 +452,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 Intent ii = new Intent(getActivity(), PreferencesFragment.class);
                 if (mCameraId != null) {
                     ii.putExtra("cameraID", mCameraId);
-                }else {
+                } else {
                     ii.putExtra("cameraID", "0");
                 }
                 startActivity(ii);
@@ -464,7 +472,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                         }
                     }
 
-                }else {
+                } else {
                     makeToast("Please swipe left first");
                 }
 
@@ -474,11 +482,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 mCameraOpenHolder.setVisibility(View.VISIBLE);
                 startPreview();
                 MagLevControlFrag.setPreviewState(inMagLevPreview);
-
                 break;
         }
-
-
     }
 
     private void showLayout(int showWhat, boolean showOrNot) {
@@ -499,7 +504,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             mLayoutCapture.setVisibility(View.VISIBLE);
         }
     }
-
 
     private class SeekListener implements SeekBar.OnSeekBarChangeListener {
         @Override
@@ -531,14 +535,15 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                     Rect newRect = new Rect(i * minL / 100,
                             i * minT / 100,
                             rect.width() - (rect.width() - minR) * i / 100,
-                            rect.height() - (rect.height() - minB)*i / 100);
+                            rect.height() - (rect.height() - minB) * i / 100);
 
                     if (newRect.height() * newRect.width() < checkRect.width() * checkRect.height()) {
                         makeToast("Zoom Error!");
                         return;
                     }
                     mPreviewBuilder.set(CaptureRequest.SCALER_CROP_REGION, newRect);
-                    mSeekBarTextView.setText("Zoom：" + i + "%");
+                    String msg = "Zoom:" + i + "%";
+                    mSeekBarTextView.setText(msg);
                     break;
                 case R.id.autoexp_seekbar:
                     Switch switchAutoExp = (Switch) getView().findViewById(R.id.autoexp_switch);
@@ -550,7 +555,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                         int time = 100 / all;
                         int ae = ((i / time) - maxAE) > maxAE ? maxAE : ((i / time) - maxAE) < minAE ? minAE : ((i / time) - maxAE);
                         mPreviewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, ae);
-                        mSeekBarTextView.setText("Exposure Compensation：" + ae);
+                        String msg2 = "Exposure Compensation: " + ae;
+                        mSeekBarTextView.setText(msg2);
                         valueAE = ae;
                     }
                     //TODO fix exposure
@@ -566,14 +572,15 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                     break;
                 case R.id.iso_seekbar:
                     Range<Integer> range = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE);
+
                     int max1 = range.getUpper();
                     int min1 = range.getLower();
                     int iso = ((i * (max1 - min1)) / 100 + min1);
                     mPreviewBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, iso);
                     valueISO = iso;
-                    mSeekBarTextView.setText("Iso：" + iso);
+                    String msg3 = "Iso: " + iso;
+                    mSeekBarTextView.setText(msg3);
                     break;
-
             }
             updatePreview();
         }
@@ -587,8 +594,16 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         public void onStopTrackingTouch(SeekBar seekBar) {
             mSeekBarTextView.setVisibility(View.INVISIBLE);
         }
+    }
 
-
+    //only checks manual focus compatibility!
+    private boolean checkCompatibility() {
+        for (int aMCameraCapabilitiesList : mCameraCapabilitiesList) {
+            if (aMCameraCapabilitiesList == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private class CheckListener implements CompoundButton.OnCheckedChangeListener {
@@ -616,24 +631,22 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                         mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
                         mLayoutIso.getChildAt(1).setEnabled(false);
                     } else {
-                        lastValueAEComp = mPreviewBuilder.get(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION);
-                        lastValueAETime = mPreviewBuilder.get(CaptureRequest.SENSOR_EXPOSURE_TIME);
+                        int lastValueAEComp = mPreviewBuilder.get(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION);
+                        long lastValueAETime = mPreviewBuilder.get(CaptureRequest.SENSOR_EXPOSURE_TIME);
 
                         Log.d(TAG, "AEcomp: " + lastValueAEComp);
                         Log.d(TAG, "AEtime: " + lastValueAETime);
 
                         mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_OFF);
-                        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION,lastValueAEComp);
-                        mPreviewBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME,lastValueAETime);
-
+                        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, lastValueAEComp);
+                        mPreviewBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, lastValueAETime);
 
                         mLayoutIso.getChildAt(1).setEnabled(true);
-
                     }
                     break;
                 case R.id.iso_switch:
                     Switch switchAutoExp = (Switch) getView().findViewById(R.id.autoexp_switch);
-                    switchAutoExp.setChecked(isChecked);
+                    switchAutoExp.setChecked(isChecked) ;
                     if (isChecked) {
                         mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
                         mLayoutIso.getChildAt(1).setEnabled(false);
@@ -647,7 +660,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         }
     }
 
-
     //-------------------------------------------------------//
     //------------- CAMERA AND VIDEO MANAGEMENT--------------//
     //-------------------------------------------------------//
@@ -658,8 +670,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                     Log.d(TAG, "onSurfaceTextAvailable");
 
-
-                    if(!mCameraConfig) {
+                    if (!mCameraConfig) {
                         try {
                             openCamera(width, height);
                         } catch (CameraAccessException e) {
@@ -668,8 +679,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                             e.printStackTrace();
                         }
                     }
-
                 }
+
                 @Override
                 public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
                     Log.d(TAG, "onSurfaceTextChanged");
@@ -685,8 +696,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 //                    }else if (MainActivity.inPreview && mCameraConfig) {
 //                        configureTransform(width, height);
 //                    }
-
                 }
+
                 @Override
                 public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
                     Log.d(TAG, "onSurfaceTextDestroyed");
@@ -695,10 +706,12 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                     releaseMediaRecorder();
                     return true;
                 }
+
                 @Override
                 public void onSurfaceTextureUpdated(SurfaceTexture surface) {
                 }
             };
+
     /**
      * Sets up size configurations for camera
      *
@@ -707,42 +720,34 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
      */
     private void setUpCameraOutputs(int width, int height) throws CameraAccessException {
         mCameraCharacteristics = mCameraManager.getCameraCharacteristics(mCameraId);
+        mCameraCapabilitiesList = mCameraCharacteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+        //ONLY MANUAL CHECK!!
+        manualSupport = checkCompatibility();
+        if (!manualSupport) {
+            makeToast("Your device doesn't support full functionality, use camera intent instead");
+        }
 
         StreamConfigurationMap map = mCameraCharacteristics.get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
-        mLargestImageSize = Collections.max(
+        Size largestImageSize = Collections.max(
                 Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
                 new CompareSizesByArea());
 
-
         // Don't want to have it as too large...bandwidth issues
         mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                width, height, mLargestImageSize);
+                width, height, largestImageSize);
 
         mTextureView2 = MagLevControlFrag.getTexture();
         mTextureView2.setAspectRatio(9, 16);
 
         mPreviewSize2 = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                mTextureView2.getWidth(), mTextureView2.getHeight(), mLargestImageSize);
+                mTextureView2.getWidth(), mTextureView2.getHeight(), largestImageSize);
 
-        mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
-
+        Size videoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
         mVideoPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width,
-                height, mVideoSize);
-
-//        int orientation = getResources().getConfiguration().orientation;
-//        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-//            mTextureView.setAspectRatio(
-//                    mPreviewSize.getWidth(), mPreviewSize.getHeight());
-//        } else {
-//            mTextureView.setAspectRatio(
-//                    mPreviewSize.getHeight(), mPreviewSize.getWidth());
-//        }
-
-
+                height, videoSize);
     }
-
 
     /**
      * Input choices of size for video recording
@@ -762,6 +767,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         Log.e(TAG, "Couldn't find any suitable video size");
         return choices[choices.length - 1];
     }
+
     /**
      * Input choices of size from cameraChar, chooses the smallest one whose
      * width and height are at least as large as the desired values, while maintaining
@@ -801,8 +807,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
                     (long) rhs.getWidth() * rhs.getHeight());
         }
-
     }
+
     /**
      * Configures transform to mTextureView
      * Call this after preview size is found and mTextureView is set
@@ -835,24 +841,25 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         }
         mTextureView.setTransform(matrix);
     }
+
     private Size getPreferredPreviewSize(Size[] mapSizes, int width, int height) {
         List<Size> collectorSizes = new ArrayList<>();
         //cycle through map sizes, width and height will be passed as if in landscape
-        for(Size option : mapSizes) {
-            if(width > height) {
+        for (Size option : mapSizes) {
+            if (width > height) {
                 //check if bigger than texture view requested width
-                if(option.getWidth() > width &&
+                if (option.getWidth() > width &&
                         option.getHeight() > height) {
                     collectorSizes.add(option);
                 }
             } else {
-                if(option.getWidth() > height &&
+                if (option.getWidth() > height &&
                         option.getHeight() > width) {
                     collectorSizes.add(option);
                 }
             }
         }
-        if(collectorSizes.size() > 0) {
+        if (collectorSizes.size() > 0) {
             return Collections.min(collectorSizes, new Comparator<Size>() {
                 @Override
                 public int compare(Size lhs, Size rhs) {
@@ -863,30 +870,29 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         return mapSizes[0];
     }
 
-
     /**
-     * Setup camera to be openedas well as begin session to open camera based on
-     * parameters. Handlded on background
+     * Setup camera to be opened well as begin session to open camera based on
+     * parameters. Handled on background
      *
      * @param width       Width of surface
      * @param height      Height of surface
      */
-    private void openCamera(int width, int height) throws  CameraAccessException, InterruptedException{
+    private void openCamera(int width, int height) throws CameraAccessException, InterruptedException {
         Log.d(TAG, "Open Camera");
         mCameraManager = (CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);
 
         setUpCameraOutputs(width, height);
         configureTransform(width, height);
         initOutputSurface();
+
         mCameraManager.openCamera(mCameraId, mCameraDeviceStateCallback, mBackgroundHandler);
         mCameraConfig = true;
-
     }
+
     private void initOutputSurface() {
 
 //        mImageReader = ImageReader.newInstance(mLargestImageSize.getWidth(), mLargestImageSize.getHeight(),
 //                ImageFormat.JPEG,2);
-
 
         String picDims = mSharedPreferences.getString(getString(R.string.pref_picture_quality_key), "");
 
@@ -903,7 +909,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                     ImageFormat.JPEG,2);
         }
 
-
         mImageReader.setOnImageAvailableListener(
                 mOnImageAvailableListener, mBackgroundHandler);
 
@@ -915,7 +920,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
         mSurface = new Surface(texture);
         mSurface2 = new Surface(texture2);
-        mOutputSurfaces = new ArrayList<Surface>(3);
+        mOutputSurfaces = new ArrayList<>(3);
         mOutputSurfaces.add(mImageReader.getSurface());
         mOutputSurfaces.add(mSurface);
 //        mOutputSurfaces.add(mSurface2);
@@ -964,7 +969,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         lastZoom = null;
         setupPreviewSwitch();
 
-
         if (mCameraState == STATE_CAMERA) {
             try {
                 releaseMediaRecorder();
@@ -993,7 +997,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 assert texture != null;
                 texture.setDefaultBufferSize(mVideoPreviewSize.getWidth(), mVideoPreviewSize.getHeight());
                 mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-                List<Surface> surfaces = new ArrayList<Surface>();
+                List<Surface> surfaces = new ArrayList<>();
                 Surface previewSurface = new Surface(texture);
                 surfaces.add(previewSurface);
                 mPreviewBuilder.addTarget(previewSurface);
@@ -1008,19 +1012,15 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 e.printStackTrace();
             }
         }
-
     }
 
     private void setupPreviewSwitch() {
         //todo add previous whitebal, etc...
-
         if (mPreviewBuilder != null ) {
             lastAF = mPreviewBuilder.get(CaptureRequest.LENS_FOCUS_DISTANCE);
             lastZoom = mPreviewBuilder.get(CaptureRequest.SCALER_CROP_REGION);
         }
-
     }
-
 
     private void startPreviewMagLev() {
         Log.d(TAG, "startMagLevPreview");
@@ -1062,12 +1062,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         }
     }
 
-
     private final BroadcastReceiver mPreviewUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "Preview Broadcast Received");
-
 
             switch (intent.getAction()) {
 
@@ -1102,12 +1100,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                         mCameraOpenHolder.setVisibility(View.GONE);
                         mCameraClosedHolder.setVisibility(View.VISIBLE);
                         mCameraSwapHolder.setVisibility(View.GONE);
-
                     }
-
             }
-
-
         }
     };
 
@@ -1119,8 +1113,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         mPreviewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, valueAE);
         mPreviewBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, valueISO);
 
-
         mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+        //TODO fix legacy auto focus
         mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_OFF);
 
         if (lastAF != null && lastZoom != null) {
@@ -1147,11 +1141,11 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             if (mCameraState == STATE_CAMERA) {
                 try {
 
-                    mPreviewCaptureRequest = mPreviewBuilder.build();
+                    CaptureRequest previewCaptureRequest = mPreviewBuilder.build();
                     mCameraCaptureSession = cameraCaptureSession;
                     //continuous images from camera
                     mCameraCaptureSession.setRepeatingRequest(
-                            mPreviewCaptureRequest,
+                            previewCaptureRequest,
                             mSessionCaptureCallback,
                             mBackgroundHandler
                     );
@@ -1175,6 +1169,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
             }
         }
+
         @Override
         public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
             Log.i(TAG, "mSessionStateCallback--->onConfigureFailed");
@@ -1204,14 +1199,16 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
     private void takePicture() throws CameraAccessException {
         Log.d(TAG, "TakePicture");
 
+        //manual support check, zero shutter not supported on SDK <21
+        if (!manualSupport) {
+            mCaptureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
 
-        mCaptureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
+        }else {
+            mCaptureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
+        }
         mCaptureBuilder.addTarget(mImageReader.getSurface());
 
-
         mCaptureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-//
-//
 //        Range<Integer> fps[] = mCameraCharacteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
 //        mCaptureBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fps[fps.length - 1]);
         int rotation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
@@ -1220,7 +1217,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         mCameraState = STATE_CAPTURE;
 
         mCameraDevice.createCaptureSession(mOutputSurfaces, mSessionCaptureStateCallback, mBackgroundHandler);
-//        sendCameraBroadcast();
     }
 
     private void previewBuilder2CaptureBuilder() {
@@ -1243,7 +1239,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         if (mPreviewBuilder.get(CaptureRequest.CONTROL_AF_MODE) == CameraMetadata.CONTROL_AF_MODE_OFF) {
             mCaptureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_OFF);
             mCaptureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, mPreviewBuilder.get(CaptureRequest.LENS_FOCUS_DISTANCE));
-
         }
 
 //        mCaptureBuilder.set(CaptureRequest.CONTROL_EFFECT_MODE, mPreviewBuilder.get(CaptureRequest.CONTROL_EFFECT_MODE));
@@ -1256,9 +1251,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 //        mCaptureBuilder.set(CaptureRequest.CONTROL_SCENE_MODE, mPreviewBuilder.get(CaptureRequest.CONTROL_SCENE_MODE));
 //        //zoom
         mCaptureBuilder.set(CaptureRequest.SCALER_CROP_REGION, mPreviewBuilder.get(CaptureRequest.SCALER_CROP_REGION));
-
     }
-
 
     private void continuePreview() {
         mCameraState = STATE_CAMERA;
@@ -1280,20 +1273,16 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         @Override
         public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
             super.onCaptureCompleted(session, request, result);
-
-
 //            process(result);
         }
 
         @Override
         public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureFailure failure) {
             super.onCaptureFailed(session, request, failure);
-
             makeToast("Focus failed");
-
-
         }
     };
+
     private CameraCaptureSession.StateCallback mSessionCaptureStateCallback = new CameraCaptureSession.StateCallback() {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession session) {
@@ -1419,7 +1408,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
             mMediaRecorder.setOutputFile(mVideoFile.getAbsolutePath());
         } else Log.d(TAG, "ErrorVideoFile");
 
-
         mMediaRecorder.setVideoEncodingBitRate(10000000);
         mMediaRecorder.setVideoFrameRate(30);
         //returns val/not entry
@@ -1482,9 +1470,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
                 mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.VORBIS);
                 break;
         }
-
-
-
 
 //        mMediaRecorder.setOutputFile(getVideoFile(getActivity()).getAbsolutePath());
 //        mMediaRecorder.setVideoEncodingBitRate(10000000);
@@ -1662,8 +1647,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
         } else {
             return null;
         }
-
-        mImageFileLocation = mediaFile.getAbsolutePath();
         return mediaFile;
     }
 
@@ -1734,10 +1717,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener{
 
         openBackgroundThread();
 
-
-
         afterCreate = false;
-
-
     }
 }
