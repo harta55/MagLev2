@@ -77,7 +77,6 @@ import java.util.List;
  */
 public class PreviewFrag extends Fragment implements View.OnClickListener {
 
-    //
     private SharedPreferences mSharedPreferences;
     private ImageView mVideoButton;
     private boolean inPicturePreview = false;
@@ -171,9 +170,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                                 writtenFile));
                         scanFile(writtenFile.getAbsolutePath());
                         makeToast("Photo saved: " + writtenFile.getAbsolutePath());
-//                        sendCameraBroadcast();
-
-
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

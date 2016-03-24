@@ -51,6 +51,8 @@ public class MainActivity extends ActionBarActivity {
 
                     if (prevPosition == 2) {
                         mViewPager.setCurrentItem(0);
+                        getSupportActionBar().show();
+                        break;
                     }
                     inPreview = true;
 //                  sendCameraBroadcast(MainActivity.CAMERA_RESTART);
