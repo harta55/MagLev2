@@ -13,6 +13,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 /**
@@ -47,6 +48,10 @@ public class MainActivity extends ActionBarActivity {
                     prevPosition = 0;
                     break;
                 case 1:
+
+                    if (prevPosition == 2) {
+                        mViewPager.setCurrentItem(0);
+                    }
                     inPreview = true;
 //                  sendCameraBroadcast(MainActivity.CAMERA_RESTART);
                     prevPosition = 1;
@@ -58,16 +63,13 @@ public class MainActivity extends ActionBarActivity {
                     inPreview = true;
                     prevPosition = 2;
                     break;
-
             }
-
         }
 
         @Override
         public void onPageScrollStateChanged(int state) {
 
         }
-
 
         private void sendCameraBroadcast(String action) {
             Intent i = new Intent(action);
@@ -94,7 +96,6 @@ public class MainActivity extends ActionBarActivity {
             }
 
             LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(i);
-
         }
     };
 
@@ -230,7 +231,6 @@ class pagerAdapter extends FragmentPagerAdapter {
                 return "Preview";
             case 2:
                 return "GalleryView";
-
         }
         return null;
     }
