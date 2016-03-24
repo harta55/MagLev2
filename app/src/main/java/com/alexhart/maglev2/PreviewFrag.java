@@ -93,6 +93,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
     private RelativeLayout mLayoutBottom;
     private LinearLayout mLayoutAutoFoc;
     private RelativeLayout mLayoutCapture;
+    private SeekBar mZoomSeek;
     private boolean showAutoFocFlag = false;
     private boolean showZoomFlag = false;
     private boolean showAutoExpFlag = false;
@@ -154,6 +155,9 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
     private CaptureRequest.Builder mCaptureBuilder;
 
     private static final String TAG = "PreviewFrag";
+
+    private float mFingerDist;
+    private double mPinchCount;
 
     private ImageReader mImageReader;
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener =
@@ -280,7 +284,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         SeekBar seekIso = (SeekBar) v.findViewById(R.id.iso_seekbar);
 
         LinearLayout layoutZoom = (LinearLayout) v.findViewById(R.id.zoom_layout);
-        SeekBar seekZoom = (SeekBar) v.findViewById(R.id.zoom_seekbar);
+        mZoomSeek = (SeekBar) v.findViewById(R.id.zoom_seekbar);
 
         LinearLayout layoutAutoExp = (LinearLayout) v.findViewById(R.id.autoexp_layout);
         Switch switchAutoExp = (Switch) v.findViewById(R.id.autoexp_switch);
@@ -330,6 +334,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
             }
         });
 
+        mTextureView.setOnTouchListener(mTextureClickListener);
+
         btnSettings.setOnClickListener(this);
         btnFocus.setOnClickListener(this);
         btnZoom.setOnClickListener(this);
@@ -350,7 +356,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         SeekListener mSeekListener = new SeekListener();
         seekAutoFoc.setOnSeekBarChangeListener(mSeekListener);
         seekAutoExp.setOnSeekBarChangeListener(mSeekListener);
-        seekZoom.setOnSeekBarChangeListener(mSeekListener);
+        mZoomSeek.setOnSeekBarChangeListener(mSeekListener);
         seekIso.setOnSeekBarChangeListener(mSeekListener);
 
         seekAutoFoc.setEnabled(false);
@@ -359,12 +365,12 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         seekAutoFoc.setMax(100);
         seekIso.setMax(100);
         seekAutoExp.setMax(100);
-        seekZoom.setMax(100);
+        mZoomSeek.setMax(100);
 
         seekAutoFoc.setProgress(50);
         seekAutoExp.setProgress(50);
         seekIso.setProgress(50);
-        seekZoom.setProgress(0);
+        mZoomSeek.setProgress(0);
 
         mLayoutList = new ArrayList<>();
         mLayoutList.add(mLayoutBottom);//0
@@ -373,6 +379,58 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         mLayoutList.add(layoutAutoWhiteBal);//3
         mLayoutList.add(mLayoutIso);//4
         mLayoutList.add(layoutZoom);//5
+    }
+
+    private View.OnTouchListener mTextureClickListener = new View.OnTouchListener(){
+
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            int action = event.getAction();
+
+            if (event.getPointerCount() > 1) {
+                if (action == MotionEvent.ACTION_POINTER_DOWN) {
+                    mFingerDist = getFingerSpacing(event);
+                } else if (action == MotionEvent.ACTION_MOVE) {
+                    handlePinch(event);
+                }
+            } else {
+                mSeekBarTextView.setVisibility(View.GONE);
+            }
+
+            return true;
+        }
+    };
+
+    private void handlePinch(MotionEvent event) {
+
+        mSeekBarTextView.setVisibility(View.VISIBLE);
+        showZoomFlag = true;
+        showLayout(SHOW_ZOOM, showZoomFlag);
+
+        float newDist = getFingerSpacing(event);
+        int prog = mZoomSeek.getProgress();
+        mPinchCount++;
+
+        if (newDist > mFingerDist) {
+
+            if (mPinchCount >10) {
+                prog++;
+                mZoomSeek.setProgress(prog);
+            }
+
+        }else if (newDist < mFingerDist) {
+            prog--;
+            mZoomSeek.setProgress(prog);
+            mPinchCount = 0;
+        }
+        mFingerDist = newDist;
+    }
+
+    /** Determine the space between the first two fingers */
+    private float getFingerSpacing(MotionEvent event) {
+        float x = event.getX(0) - event.getX(1);
+        float y = event.getY(0) - event.getY(1);
+        return (float)Math.sqrt(x * x + y * y);
     }
 
     private void initializeSeekBarVals() {
