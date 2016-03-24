@@ -106,13 +106,11 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
     private static final int SHOW_ISO = 4;
     private static final int SHOW_ZOOM = 5;
 
+    //camera members
     private Size mVideoPreviewSize;
     private MediaRecorder mMediaRecorder;
     boolean recording = false;
     private CameraCaptureSession mVideoCaptureSession;
-
-
-    //camera members
     private boolean manualSupport;
     private int[] mCameraCapabilitiesList;
     private boolean mMediaPrepared = false;
@@ -186,7 +184,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
             mImage = image;
             mFile = file;
         }
-
 
         @Override
         public void run() {
@@ -369,7 +366,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         seekIso.setProgress(50);
         seekZoom.setProgress(0);
 
-        mLayoutList = new ArrayList<View>();
+        mLayoutList = new ArrayList<>();
         mLayoutList.add(mLayoutBottom);//0
         mLayoutList.add(mLayoutAutoFoc);//1
         mLayoutList.add(layoutAutoExp);//2
@@ -517,7 +514,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                     float num = (((float) i) * minimumLens / 100);
                     mPreviewBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, num);
                     int showNum = (int) num;
-                    mSeekBarTextView.setText("Focus：" + showNum);
+                    String msg4 = "Focus:" + showNum;
+                    mSeekBarTextView.setText(msg4);
                     break;
                 case R.id.zoom_seekbar:
                     Rect rect = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
@@ -526,6 +524,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                     //forced max zoom, camera characteristics picked out 4x for some reason...!!!
                     int maxZoom = 8;
 
+                    assert rect != null;
                     int minL = (rect.width() - (rect.width() / maxZoom)) / 2;
                     int minR = rect.width() - minL;
                     int minT = (rect.height() - (rect.height() / maxZoom)) / 2;
@@ -549,6 +548,12 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                     Switch switchAutoExp = (Switch) getView().findViewById(R.id.autoexp_switch);
                     if (switchAutoExp.isChecked()) {
                         Range<Integer> range1 = mCameraCharacteristics.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE);
+
+                        if (range1 == null) {
+                            makeToast("Device does not support exposure control");
+                            return;
+                        }
+
                         int maxAE = range1.getUpper();
                         int minAE = range1.getLower();
                         int all = (-minAE) + maxAE;
@@ -573,6 +578,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                 case R.id.iso_seekbar:
                     Range<Integer> range = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE);
 
+                    if (range == null) {
+                        makeToast("Device does not support iso!");
+                        return;
+                    }
                     int max1 = range.getUpper();
                     int min1 = range.getLower();
                     int iso = ((i * (max1 - min1)) / 100 + min1);
@@ -607,7 +616,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
     }
 
     private class CheckListener implements CompoundButton.OnCheckedChangeListener {
-
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if (mPreviewBuilder == null || getView() == null) {
@@ -779,6 +787,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
      * @param aspectRatio Aspect ratio
      * @return Best size given parameters, or arbitrary size
      */
+
     private static Size chooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio) {
         // Collect the supported resolutions that are at least as big as the preview Surface
         List<Size> bigEnough = new ArrayList<>();
@@ -1293,13 +1302,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                             @Override
                             public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
                                 super.onCaptureCompleted(session, request, result);
-
                             }
                         };
 
-
                 session.capture(mCaptureBuilder.build(), captureCallback, null);
-
 
             } catch (CameraAccessException e) {
                 Log.e(TAG, "CaptureStateError");
@@ -1308,7 +1314,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                 Log.e(TAG, "CaptureStateError");
 //                Toast.makeText(getApplicationContext(), "onConfigured,Session closed", Toast.LENGTH_SHORT).show();
             }
-
         }
 
         @Override
@@ -1318,11 +1323,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         }
     };
 
-
-
-
     private void updatePreview() {
-
         try {
             if (mCameraState == STATE_VIDEO) {
                 mCameraCaptureSession.setRepeatingRequest(mPreviewBuilder.build(),null, mBackgroundHandler);
@@ -1340,15 +1341,12 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
             mCameraDevice = null;
         }
         mCameraConfig = false;
-
     }
 
     private void setupMediaRecorder() throws IOException {
-
         if (mMediaRecorder == null) {
             mMediaRecorder = new MediaRecorder();
         }
-
 
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
@@ -1357,7 +1355,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
 //        mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
 
         //todo fix setup so temp file isn't created (could do all onClick, not efficient)
-
 
         switch (mSharedPreferences.getString(getString(R.string.pref_video_format_key), "0")) {
 
@@ -1498,17 +1495,13 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
 //        } catch (CameraAccessException e) {
 //            e.printStackTrace();
 //        }
-//
-//
 //        mCaptureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
 //
 //        int rotation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
 //        mCaptureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
 //        previewBuilder2CaptureBuilder();
 //        mCameraState = STATE_CAMERA;
-
         mMediaRecorder.start();
-
     }
 
     private void stopRecordingVideo() {
@@ -1528,7 +1521,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
 //        sendCameraBroadcast();
 //        releaseMediaRecorder();
         startPreview();
-
     }
 
     public static boolean getCameraConfig() {
@@ -1650,19 +1642,14 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         return mediaFile;
     }
 
-
     private void makeToast(String msg) {
         Toast.makeText(getActivity(), msg, Toast.LENGTH_SHORT).show();
     }
-
-
 
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         Log.d(TAG, "OnAttach");
-
-
     }
 
     @Override
@@ -1682,8 +1669,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         closeCamera();
         closeBackgroundThread();
         releaseMediaRecorder();
-
-
     }
 
     @Override
@@ -1691,7 +1676,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         super.onResume();
 
         if (afterCreate) {
-
 
             if (mSharedPreferences.getBoolean(getString(R.string.pref_camera_startup_key),true)){
                 mCameraClosedHolder.setVisibility(View.GONE);

@@ -51,14 +51,11 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
     //UI members//
     public static AutoFitTextureView mCameraPreviewMagLev;
     private EditText mBrightSet, mAmpSet, mFreqSet;
-    private Switch mOffSwitch;
     private ListView mListView;
     private Button mSendButton, mDefaulButton, mCameraButton;
 
     private int brightVal, ampVal, freqVal;
-
     private Uri photoVideoIntent;
-
 
     //bluetooth members//
     private String mDeviceName;
@@ -125,9 +122,6 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
 
         initUI(v);
         setListener();
-
-
-
         return v;
     }
 
@@ -143,9 +137,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
     }
 
     private void updateUi() {
-
         switch  (mState){
-
             case STATE_NONE:
 //                mCameraFrameHolder.setVisibility(View.GONE);
             case STATE_SCANNING:
@@ -161,10 +153,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                 break;
             case STATE_SCAN_FAIL:
                 break;
-
-
         }
-
     }
 
     @Override
@@ -219,7 +208,6 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
         }
     }
 
-
     private void initUI(View v) {
 
         mCameraPreviewMagLev = (AutoFitTextureView)v.findViewById(R.id.camera_preview_maglev);
@@ -228,7 +216,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
         mBrightSet = (EditText)v.findViewById(R.id.brightness_set);
         mAmpSet = (EditText)v.findViewById(R.id.amplitude_set);
         mFreqSet = (EditText)v.findViewById(R.id.frequency_set);
-        mOffSwitch = (Switch)v.findViewById(R.id.off_switch);
+        Switch offSwitch = (Switch) v.findViewById(R.id.off_switch);
         mSendButton = (Button)v.findViewById(R.id.sendData_button);
         mDefaulButton = (Button)v.findViewById(R.id.default_button);
         mCameraButton = (Button)v.findViewById(R.id.camera_button);
@@ -237,7 +225,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
         mDefaulButton.setOnClickListener(this);
         mCameraButton.setOnClickListener(this);
 
-        mOffSwitch.setOnCheckedChangeListener(new Switch.OnCheckedChangeListener(){
+        offSwitch.setOnCheckedChangeListener(new Switch.OnCheckedChangeListener() {
 
 
             @Override
@@ -249,7 +237,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                     mAmpSet.setEnabled(false);
                     mFreqSet.setText("0");
                     mFreqSet.setEnabled(false);
-                }else {
+                } else {
                     mBrightSet.setEnabled(true);
                     mAmpSet.setEnabled(true);
                     mFreqSet.setEnabled(true);
@@ -306,19 +294,14 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                             mFreqSet.setText("");
                         }
                     }
-
                 }
             }
         });
-
-
     }
-
 
     public static AutoFitTextureView getTexture() {
         return mCameraPreviewMagLev;
     }
-
 
     private boolean checkValues (int bright, int amp, int freq) {
 
@@ -333,7 +316,6 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
 
     }
 
-
     private void makeToast(String s) {
         Toast.makeText(getActivity(),s,Toast.LENGTH_SHORT).show();
     }
@@ -342,7 +324,6 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
     //assumes operating voltage of 3V
     public double convertToVoltage (int pwmLevel) {
         return (double)pwmLevel*(3.0 / 255.0);
-
     }
 
     public double convertToMilliseconds (int freq) {
@@ -420,11 +401,8 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                     mBluetoothAdapter.stopLeScan(mLeScanCallback);
                     mScanning = false;
                 }
-
-
             }
         });
-
     }
 
     /**
@@ -460,11 +438,6 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
         }
     };
 
-
-
-
-
-
     // Adapter for holding devices found through scanning.
     private class LeDeviceListAdapter extends BaseAdapter {
         private ArrayList<BluetoothDevice> mLeDevices;
@@ -481,8 +454,6 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                 mLeDevices.add(device);
             }
         }
-
-
 
         public BluetoothDevice getDevice(int position) {
             return mLeDevices.get(position);
@@ -659,10 +630,7 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
                     makeToast("Video cancelled!");
                 }
         }
-
-
     }
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -703,7 +671,6 @@ public class MagLevControlFrag extends Fragment implements View.OnClickListener{
         }
         return true;
     }
-
 
     private void sendCameraBroadcast(String action) {
         Intent i = new Intent(action);
