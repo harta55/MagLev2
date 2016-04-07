@@ -119,10 +119,7 @@ public class MainActivity extends ActionBarActivity {
         FragmentManager fm = getSupportFragmentManager();
         mViewPager.setAdapter(new pagerAdapter(fm));
         mViewPager.setOnPageChangeListener(mOnPageChangeListener);
-
-
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -149,7 +146,6 @@ public class MainActivity extends ActionBarActivity {
 
 
         return super.onPrepareOptionsMenu(menu);
-
     }
 
     @Override

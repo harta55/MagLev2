@@ -91,8 +91,11 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
     private AutoFitTextureView mTextureView2;
     private RelativeLayout mLayoutBottom;
     private LinearLayout mLayoutAutoFoc;
+    private LinearLayout mLayoutExpTime;
+    private LinearLayout mLayoutAutoExp;
     private RelativeLayout mLayoutCapture;
     private SeekBar mZoomSeek;
+    private boolean showExpTimeFlag = false;
     private boolean showAutoFocFlag = false;
     private boolean showZoomFlag = false;
     private boolean showAutoExpFlag = false;
@@ -102,9 +105,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
 
     private static final int SHOW_AUTOFOC = 1;
     private static final int SHOW_AUTOEXP = 2;
-    private static final int SHOW_AUTOWHITBAL = 3;
-    private static final int SHOW_ISO = 4;
-    private static final int SHOW_ZOOM = 5;
+    private static final int SHOW_EXPTIME = 3;
+    private static final int SHOW_AUTOWHITBAL = 4;
+    private static final int SHOW_ISO = 5;
+    private static final int SHOW_ZOOM = 6;
 
     //camera members
     private Size mVideoPreviewSize;
@@ -279,10 +283,14 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         Switch switchIso = (Switch) v.findViewById(R.id.iso_switch);
         SeekBar seekIso = (SeekBar) v.findViewById(R.id.iso_seekbar);
 
+        mLayoutExpTime = (LinearLayout) v.findViewById(R.id.expTime_layout);
+        Switch switchExpTime = (Switch) v.findViewById(R.id.expTime_switch);
+        SeekBar seekExpTime = (SeekBar) v.findViewById(R.id.expTime_seek);
+
         LinearLayout layoutZoom = (LinearLayout) v.findViewById(R.id.zoom_layout);
         mZoomSeek = (SeekBar) v.findViewById(R.id.zoom_seekbar);
 
-        LinearLayout layoutAutoExp = (LinearLayout) v.findViewById(R.id.autoexp_layout);
+        mLayoutAutoExp = (LinearLayout) v.findViewById(R.id.autoexp_layout);
         Switch switchAutoExp = (Switch) v.findViewById(R.id.autoexp_switch);
         SeekBar seekAutoExp = (SeekBar) v.findViewById(R.id.autoexp_seekbar);
 
@@ -291,6 +299,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         mLayoutCapture = (RelativeLayout) v.findViewById(R.id.capture_layout);
         mCameraButton = (ImageView) v.findViewById(R.id.camera_button);
         mVideoButton = (ImageView) v.findViewById(R.id.video_button);
+        ImageView btnExpTime = (ImageView) v.findViewById(R.id.expTime_button);
         ImageView btnFocus = (ImageView) v.findViewById(R.id.focus_button);
         ImageView btnAutoExp = (ImageView) v.findViewById(R.id.autoExp_button);
         ImageView btnAutoWhiteBal = (ImageView) v.findViewById(R.id.autowhitebal_button);
@@ -337,26 +346,32 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         btnZoom.setOnClickListener(this);
         btnIso.setOnClickListener(this);
         btnAutoExp.setOnClickListener(this);
+        btnExpTime.setOnClickListener(this);
         btnAutoWhiteBal.setOnClickListener(this);
         mVideoButton.setOnClickListener(this);
 
         CheckListener mCheckListener = new CheckListener();
         switchAutoFoc.setOnCheckedChangeListener(mCheckListener);
+        switchExpTime.setOnCheckedChangeListener(mCheckListener);
         switchAutoExp.setOnCheckedChangeListener(mCheckListener);
         switchIso.setOnCheckedChangeListener(mCheckListener);
 
         switchAutoFoc.setChecked(true);
         switchIso.setChecked(true);
         switchAutoExp.setChecked(true);
+        switchExpTime.setChecked(true);
 
         SeekListener mSeekListener = new SeekListener();
         seekAutoFoc.setOnSeekBarChangeListener(mSeekListener);
         seekAutoExp.setOnSeekBarChangeListener(mSeekListener);
+        seekExpTime.setOnSeekBarChangeListener(mSeekListener);
         mZoomSeek.setOnSeekBarChangeListener(mSeekListener);
         seekIso.setOnSeekBarChangeListener(mSeekListener);
 
         seekAutoFoc.setEnabled(false);
         seekIso.setEnabled(false);
+        seekAutoExp.setEnabled(false);
+        seekExpTime.setEnabled(false);
 
         seekAutoFoc.setMax(100);
         seekIso.setMax(100);
@@ -368,13 +383,15 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         seekIso.setProgress(50);
         mZoomSeek.setProgress(0);
 
+        //numbers up top
         mLayoutList = new ArrayList<>();
         mLayoutList.add(mLayoutBottom);//0
         mLayoutList.add(mLayoutAutoFoc);//1
-        mLayoutList.add(layoutAutoExp);//2
-        mLayoutList.add(layoutAutoWhiteBal);//3
-        mLayoutList.add(mLayoutIso);//4
-        mLayoutList.add(layoutZoom);//5
+        mLayoutList.add(mLayoutAutoExp);//2
+        mLayoutList.add(mLayoutExpTime); //3
+        mLayoutList.add(layoutAutoWhiteBal);//4
+        mLayoutList.add(mLayoutIso);//5
+        mLayoutList.add(layoutZoom);//6
     }
 
     private View.OnTouchListener mTextureClickListener = new View.OnTouchListener(){
@@ -392,7 +409,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
             } else {
                 mSeekBarTextView.setVisibility(View.GONE);
             }
-
             return true;
         }
     };
@@ -464,6 +480,12 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                 }
                 showAutoFocFlag = !showAutoFocFlag;
                 showLayout(SHOW_AUTOFOC, showAutoFocFlag);
+                break;
+
+            case R.id.expTime_button:
+                showExpTimeFlag = !showExpTimeFlag;
+                showLayout(SHOW_EXPTIME, showExpTimeFlag);
+
                 break;
 
             case R.id.zoom_button:
@@ -565,6 +587,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
             switch (seekBar.getId()) {
                 case R.id.focus_seekbar:
                     float minimumLens = mCameraCharacteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
+                    if (minimumLens == 0) {
+                        makeToast("Device does not support manual control");
+                        return;
+                    }
                     float num = (((float) i) * minimumLens / 100);
                     mPreviewBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, num);
                     int showNum = (int) num;
@@ -599,39 +625,40 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                     mSeekBarTextView.setText(msg);
                     break;
                 case R.id.autoexp_seekbar:
-                    Switch switchAutoExp = (Switch) getView().findViewById(R.id.autoexp_switch);
-                    if (switchAutoExp.isChecked()) {
-                        Range<Integer> range1 = mCameraCharacteristics.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE);
-
-                        if (range1 == null) {
-                            makeToast("Device does not support exposure control");
-                            return;
-                        }
-
-                        int maxAE = range1.getUpper();
-                        int minAE = range1.getLower();
-                        int all = (-minAE) + maxAE;
-                        int time = 100 / all;
-                        int ae = ((i / time) - maxAE) > maxAE ? maxAE : ((i / time) - maxAE) < minAE ? minAE : ((i / time) - maxAE);
-                        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, ae);
-                        String msg2 = "Exposure Compensation: " + ae;
-                        mSeekBarTextView.setText(msg2);
-                        valueAE = ae;
+                    Range<Integer> range1 = mCameraCharacteristics.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE);
+                    if (range1 == null) {
+                        makeToast("Device does not support exposure control");
+                        return;
                     }
-                    //TODO fix exposure
-//                    else {
-//                        Range<Long> range = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE);
-//                        long max = range.getUpper();
-//                        long min = range.getLower();
-//                        long ae = ((i * (max - min)) / 100 + min);
-//                        mPreviewBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, ae);
-//                        mSeekBarTextView.setText("Exposure Time：" + ae);
-//                        valueAETime = ae;
-//                    }
+                    int maxAE = range1.getUpper();
+                    int minAE = range1.getLower();
+                    int all = (-minAE) + maxAE;
+                    int time = 100 / all;
+                    int ae = ((i / time) - maxAE) > maxAE ? maxAE : ((i / time) - maxAE) < minAE ? minAE : ((i / time) - maxAE);
+                    mPreviewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, ae);
+                    String msg2 = "Exposure Compensation: " + ae;
+                    mSeekBarTextView.setText(msg2);
+                    valueAE = ae;
+                    break;
+
+                case R.id.expTime_seek:
+                    Range<Long> range3 = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE);
+                    if (range3 == null) {
+                        makeToast("Device does not support exposure time control");
+                        return;
+                    }
+                    long max = range3.getUpper();
+                    long min = range3.getLower();
+//                    Log.d("Exposure", "Exp max: " + max);
+//                    Log.d("Exposure", "Exp min: " + min);
+                    long ae2 = ((i * (max - min)) / 100 + min);
+                    mPreviewBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, ae2);
+                    String msg5 = "Exposure Time: " + ae2;
+                    mSeekBarTextView.setText(msg5);
+                    valueAETime = ae2;
                     break;
                 case R.id.iso_seekbar:
                     Range<Integer> range = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE);
-
                     if (range == null) {
                         makeToast("Device does not support iso!");
                         return;
@@ -675,6 +702,10 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
             if (mPreviewBuilder == null || getView() == null) {
                 return;
             }
+            Switch switchIso = (Switch) getView().findViewById(R.id.iso_switch);
+            Switch switchExpTime = (Switch) getView().findViewById(R.id.expTime_switch);
+            Switch switchAutoExp = (Switch) getView().findViewById(R.id.autoexp_switch);
+
             switch (buttonView.getId()) {
                 case R.id.focus_switch:
                     if (isChecked) {
@@ -686,35 +717,46 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                     }
                     break;
                 case R.id.autoexp_switch:
-                    Switch switchISO = (Switch) getView().findViewById(R.id.iso_switch);
-                    switchISO.setChecked(isChecked);
                     //exposure compensation
                     if (isChecked) {
                         mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
-                        mLayoutIso.getChildAt(1).setEnabled(false);
+                        mLayoutAutoExp.getChildAt(1).setEnabled(false);
+
                     } else {
-                        int lastValueAEComp = mPreviewBuilder.get(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION);
-                        long lastValueAETime = mPreviewBuilder.get(CaptureRequest.SENSOR_EXPOSURE_TIME);
-
-                        Log.d(TAG, "AEcomp: " + lastValueAEComp);
-                        Log.d(TAG, "AEtime: " + lastValueAETime);
-
-                        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_OFF);
-                        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, lastValueAEComp);
-                        mPreviewBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, lastValueAETime);
-
-                        mLayoutIso.getChildAt(1).setEnabled(true);
+//                        int lastValueAEComp = mPreviewBuilder.get(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION);
+//                        long lastValueAETime = mPreviewBuilder.get(CaptureRequest.SENSOR_EXPOSURE_TIME);
+                        switchExpTime.setChecked(true);
+                        switchIso.setChecked(true);
+                        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
+//                        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, lastValueAEComp);
+//                        mPreviewBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, lastValueAETime);
+                        mLayoutAutoExp.getChildAt(1).setEnabled(true);
                     }
                     break;
                 case R.id.iso_switch:
-                    Switch switchAutoExp = (Switch) getView().findViewById(R.id.autoexp_switch);
-                    switchAutoExp.setChecked(isChecked) ;
                     if (isChecked) {
                         mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
                         mLayoutIso.getChildAt(1).setEnabled(false);
+                        switchExpTime.setChecked(true);
                     } else {
+                        switchAutoExp.setChecked(true);
+                        switchExpTime.setChecked(false);
                         mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_OFF);
+                        //forced default 1/10s shutter
+                        mPreviewBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, (long)107361380);
                         mLayoutIso.getChildAt(1).setEnabled(true);
+                    }
+                    break;
+                case R.id.expTime_switch:
+                    if (isChecked) {
+                        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
+                        mLayoutExpTime.getChildAt(1).setEnabled(false);
+                        switchIso.setChecked(true);
+                    } else {
+                        switchAutoExp.setChecked(true);
+                        switchIso.setChecked(false);
+                        mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_OFF);
+                        mLayoutExpTime.getChildAt(1).setEnabled(true);
                     }
                     break;
             }
@@ -1035,7 +1077,6 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         if (mCameraState == STATE_CAMERA) {
             try {
                 releaseMediaRecorder();
-
                 mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 mPreviewBuilder.addTarget(mSurface);
                 initPreviewBuilder();

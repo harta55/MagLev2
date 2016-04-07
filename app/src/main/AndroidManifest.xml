@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <!--Needed for Marshmallow phones!-->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
@@ -40,8 +41,6 @@
         <activity android:name=".PreferencesFragment"
                   android:screenOrientation="portrait"
                   android:label="PreferencesFragment"/>
-
-
 
     </application>
 

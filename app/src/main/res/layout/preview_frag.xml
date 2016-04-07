@@ -50,6 +50,15 @@
                 android:background="@drawable/btn_ae"/>
 
             <ImageView
+                android:id="@+id/expTime_button"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:scaleType="centerInside"
+                android:layout_gravity="center"
+                android:layout_marginLeft="5dp"
+                android:background="@drawable/btn_exp_time"/>
+
+            <ImageView
                 android:id="@+id/autowhitebal_button"
                 android:layout_width="25dp"
                 android:layout_height="25dp"
@@ -225,6 +234,33 @@
 
                 <SeekBar
                     android:id="@+id/autoexp_seekbar"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="5dip"
+                    android:gravity="center"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/expTime_layout"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:orientation="vertical"
+                android:visibility="invisible">
+
+                <Switch
+                    android:id="@+id/expTime_switch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="5dip"
+                    android:gravity="center"/>
+
+                <SeekBar
+                    android:id="@+id/expTime_seek"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
