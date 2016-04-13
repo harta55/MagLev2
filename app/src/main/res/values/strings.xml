@@ -45,9 +45,18 @@
     <string name="pref_video_quality_key">video_quality</string>
     <string name="pref_video_format_key">video_format</string>
     <string name="pref_camera_startup_key">camera_startup</string>
+    <string name="pref_camera_button_delay">button_delay</string>
+    <string name="pref_button_delay_warning">Large delay, consider lowering</string>
+    <string name="pref_video_encode_title">Video Encoding</string>
+    <string name="pref_video_encoding_key">video_encoding</string>
+    <string name="pref_video_encoding_summary">Change the video encoding method</string>
+    <string name="pref_audio_encoding_summary">Change the audio encoder</string>
+    <string name="pref_audio_encoding_title">Audio Encoding</string>
+    <string name="pref_audio_encoding_key">audio_encoder</string>
 
     <!-- Camera Preview -->
     <string name="camera_compatability_error">Sorry your camera does not support this setting</string>
+    <string name="camera_preview_swap_text">Swap previews?</string>
 
     <!-- Auto White Balance SeekBar -->
     <string name="seek_bar_auto">Auto</string>
@@ -58,13 +67,5 @@
     <string name="seek_bar_shade">Shade</string>
     <string name="seek_bar_twilight">Twilight</string>
     <string name="seek_bar_warm_fluorescent">Warm Fluorescent</string>
-    <string name="pref_video_encode_title">Video Encoding</string>
-    <string name="pref_video_encoding_key">video_encoding</string>
-    <string name="pref_video_encoding_summary">Change the video encoding method</string>
-    <string name="pref_audio_encoding_summary">Change the audio encoder</string>
-    <string name="pref_audio_encoding_title">Audio Encoding</string>
-    <string name="pref_audio_encoding_key">audio_encoder</string>
-    <string name="camera_preview_swap_text">Swap previews?</string>
-
 
 </resources>

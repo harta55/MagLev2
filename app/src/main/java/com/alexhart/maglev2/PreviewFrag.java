@@ -324,6 +324,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                             mCameraButton.setImageResource(R.drawable.camera_btn_ctrl);
                             mVideoButton.setImageResource(R.drawable.video_btn);
                             startPreview();
+                            buttonDelay();
                         }
                         Log.i("setOnTouchListener", "MotionEvent.ACTION_DOWN");
                         break;
@@ -332,6 +333,8 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                         if (inPicturePreview) {
                             continuePreview();
                         }
+                        buttonDelay();
+
                         Log.i("setOnTouchListener", "MotionEvent.ACTION_UP");
                         break;
                 }
@@ -392,6 +395,30 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
         mLayoutList.add(layoutAutoWhiteBal);//4
         mLayoutList.add(mLayoutIso);//5
         mLayoutList.add(layoutZoom);//6
+    }
+
+    private void buttonDelay() {
+        //50% transparent
+        String delayStr = mSharedPreferences.getString(getString(R.string.pref_camera_button_delay),"");
+        int delay;
+        if (delayStr.equals("")) {
+            delay = 2000;
+        }else {
+            delay = Integer.parseInt(delayStr)*1000;
+        }
+        mCameraButton.setAlpha(128);
+        mVideoButton.setAlpha(128);
+        mCameraButton.setEnabled(false);
+        mVideoButton.setEnabled(false);
+        final Handler buttonDisableHandler = new Handler();
+        buttonDisableHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mCameraButton.setEnabled(true);
+                mVideoButton.setEnabled(true);
+                mCameraButton.setAlpha(255);
+                mVideoButton.setAlpha(255);
+            }}, delay);
     }
 
     private View.OnTouchListener mTextureClickListener = new View.OnTouchListener(){
@@ -461,6 +488,7 @@ public class PreviewFrag extends Fragment implements View.OnClickListener {
                     mVideoButton.setImageResource(R.drawable.video_btn_active);
                     mCameraButton.setImageResource(R.drawable.camera_btn);
                     startPreview();
+                    buttonDelay();
                 } else if (inVideoPreview && !recording) {
                     startRecordingVideo();
                     mVideoButton.setImageResource(R.drawable.video_btn_stop_active);

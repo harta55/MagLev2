@@ -2,6 +2,7 @@ package com.alexhart.maglev2;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -10,9 +11,11 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
+import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.util.Size;
 import android.widget.Toast;
@@ -47,6 +50,7 @@ public class PreferencesFragment extends Activity {
         private ListPreference mVideoQuality;
         private ListPreference mVideoFormat;
         private CheckBoxPreference mCameraStartup;
+        private EditTextPreference mButtonTimer;
         private CameraManager mCameraManager;
         private CameraCharacteristics mCameraCharacteristics;
 
@@ -63,9 +67,11 @@ public class PreferencesFragment extends Activity {
             mVideoQuality = (ListPreference) findPreference(getString(R.string.pref_video_quality_key));
             mVideoFormat = (ListPreference) findPreference(getString(R.string.pref_video_format_key));
             mCameraStartup = (CheckBoxPreference) findPreference(getString(R.string.pref_camera_startup_key));
+            mButtonTimer = (EditTextPreference) findPreference(getString(R.string.pref_camera_button_delay));
 
             mPictureQuality.setOnPreferenceChangeListener(this);
             mVideoQuality.setOnPreferenceChangeListener(this);
+            mButtonTimer.setOnPreferenceChangeListener(this);
 
             mCameraManager = (CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);
             try {
@@ -139,6 +145,10 @@ public class PreferencesFragment extends Activity {
                 int index = mVideoQuality.findIndexOfValue(val.toString());
                 if (index != -1) {
                     makeToast("Res Set: " + mVideoQuality.getEntries()[index]);
+                }
+            } else if (preference.getKey().equals(getString(R.string.pref_camera_button_delay))) {
+                if (Integer.parseInt(val.toString()) > 5) {
+                    makeToast(getString(R.string.pref_button_delay_warning));
                 }
             }
             return true;
